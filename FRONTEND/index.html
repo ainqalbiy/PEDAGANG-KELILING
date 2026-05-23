@@ -5,326 +5,481 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pedagang Keliling</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/game.css" />
   <link rel="stylesheet" href="css/animations.css" />
   <link rel="stylesheet" href="css/popup.css" />
 </head>
 <body>
 
-  <!-- ========== NOISE OVERLAY ========== -->
-  <div class="noise"></div>
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+  <div class="loading-inner">
+    <div class="loading-logo">PEDAGANG<br>KELILING</div>
+    <div class="loading-sub">sebuah petualangan knapsack</div>
+    <div class="loading-bar-wrap">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-tip" id="loading-tip">Memuat peta pasar...</div>
+  </div>
+</div>
 
-  <!-- ========== HEADER ========== -->
-  <header class="header">
-    <div class="header-inner">
-      <div class="header-left">
-        <p class="header-eyebrow">⚖️ Permainan Strategi Pedagang</p>
-        <h1 class="header-title">Pedagang <span>Keliling</span></h1>
+<!-- ========== TITLE SCREEN ========== -->
+<div id="title-screen" style="display:none">
+  <div class="title-inner">
+    <div class="title-logo">
+      <div class="title-main">PEDAGANG</div>
+      <div class="title-main">KELILING</div>
+      <div class="title-sub">— algoritma knapsack —</div>
+    </div>
+    <div class="title-sprite">🧑‍🌾</div>
+    <div class="title-menu">
+      <button class="menu-btn" id="btn-new-game">▶  MULAI BERDAGANG</button>
+      <button class="menu-btn" id="btn-how-to-play">?  CARA BERMAIN</button>
+      <button class="menu-btn" id="btn-title-leaderboard">🏆  LEADERBOARD</button>
+    </div>
+    <div class="title-blink">tekan ENTER atau klik untuk mulai</div>
+  </div>
+</div>
+
+<!-- ========== GAME SCREEN ========== -->
+<div id="game-screen" style="display:none">
+
+  <!-- HUD Atas -->
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="hud-name" id="hud-player-name">RUDI</div>
+      <div class="hud-hearts" id="hud-hearts">❤️❤️❤️❤️❤️</div>
+    </div>
+    <div class="hud-center">
+      <div class="hud-location" id="hud-location">📍 PASAR MAKASSAR</div>
+      <div class="hud-day" id="hud-day">HARI 1 / 5</div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-stat">
+        <span class="hud-stat-label">MODAL</span>
+        <span class="hud-stat-val gold" id="hud-budget">Rp 150</span>
       </div>
-      <div class="header-right">
-        <button class="btn-icon" id="btn-tutorial" title="Tutorial">❓</button>
-        <button class="btn-icon" id="btn-leaderboard" title="Leaderboard">🏆</button>
+      <div class="hud-stat">
+        <span class="hud-stat-label">SKOR</span>
+        <span class="hud-stat-val green" id="hud-score">+0</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-stat-label">TIMER</span>
+        <span class="hud-stat-val red" id="hud-timer">60</span>
       </div>
     </div>
-  </header>
+  </div>
 
-  <!-- ========== MAIN WRAPPER ========== -->
-  <main class="wrapper">
+  <!-- Area Utama Game -->
+  <div class="game-area">
 
-    <!-- Stage indicator -->
-    <div class="stage-bar">
-      <div class="stage-dots" id="stage-dots"></div>
-      <p class="stage-label" id="stage-label">Ronde 1 dari 5</p>
+    <!-- Peta Kota (kiri) -->
+    <div class="map-container" id="map-container">
+
+      <!-- Tile Map Grid -->
+      <div class="tile-map" id="tile-map">
+        <!-- Dirender oleh map.js -->
+      </div>
+
+      <!-- Karakter Player -->
+      <div class="character player-char" id="player" style="left:96px; top:96px">
+        <div class="char-sprite" id="player-sprite"></div>
+        <div class="char-label">YOU</div>
+      </div>
+
+      <!-- Karakter AI Rival -->
+      <div class="character ai-char" id="ai-rival" style="left:288px; top:96px">
+        <div class="char-sprite" id="ai-sprite"></div>
+        <div class="char-label">AI</div>
+      </div>
+
+      <!-- Tooltip item (muncul saat dekat barang) -->
+      <div class="item-tooltip" id="item-tooltip" style="display:none">
+        <div class="tooltip-name" id="tooltip-name"></div>
+        <div class="tooltip-stats">
+          <span class="tooltip-cost" id="tooltip-cost"></span>
+          <span class="tooltip-profit" id="tooltip-profit"></span>
+        </div>
+        <div class="tooltip-ratio" id="tooltip-ratio"></div>
+        <div class="tooltip-hint">[E] untuk beli</div>
+      </div>
+
     </div>
 
-    <!-- Status bar -->
-    <div class="statusbar" id="statusbar">
-      <div class="stat-box">
-        <div class="stat-label">Modal Tersisa</div>
-        <div class="stat-value" id="stat-budget">Rp 0</div>
-        <div class="budget-track">
-          <div class="budget-fill" id="budget-fill"></div>
+    <!-- Panel Kanan -->
+    <div class="right-panel">
+
+      <!-- Inventory / Keranjang -->
+      <div class="panel-box">
+        <div class="panel-title">🎒 KERANJANG</div>
+        <div class="inventory-list" id="inventory-list">
+          <div class="inventory-empty">Belum ada barang</div>
+        </div>
+        <div class="inventory-total" id="inventory-total" style="display:none">
+          <span>TOTAL</span>
+          <span class="gold" id="inventory-profit">+Rp 0</span>
         </div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">Keuntunganmu</div>
-        <div class="stat-value green" id="stat-profit">+Rp 0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Skor DP Optimal</div>
-        <div class="stat-value gold" id="stat-dp">???</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Total Skor</div>
-        <div class="stat-value" id="stat-total">+Rp 0</div>
-      </div>
-    </div>
 
-    <!-- Main grid -->
-    <div class="main-grid">
-
-      <!-- LEFT: Items + DP Visualizer -->
-      <div class="left-col">
-
-        <!-- Items section -->
-        <div class="section-header">
-          <p class="section-title">Barang Tersedia</p>
-          <div class="dp-mode-toggle">
-            <span class="toggle-label">Mode DP:</span>
-            <button class="toggle-btn active" id="btn-mode-simple" onclick="setDPMode('simple')">Simpel</button>
-            <button class="toggle-btn" id="btn-mode-detail" onclick="setDPMode('detail')">Detail</button>
-          </div>
-        </div>
-
-        <div class="items-grid" id="items-grid">
-          <!-- Item cards dirender oleh ui.js -->
-        </div>
-
-        <!-- DP Visualizer -->
-        <div class="dp-visualizer" id="dp-visualizer">
-          <div class="dp-header">
-            <p class="section-title">Visualisasi DP Knapsack</p>
-            <span class="dp-badge" id="dp-status-badge">Pilih barang untuk melihat DP</span>
-          </div>
-
-          <!-- Mode Simpel -->
-          <div id="dp-simple-view">
-            <div class="dp-simple-info" id="dp-simple-info">
-              <p class="dp-simple-text">Pilih barang untuk melihat analisis real-time.</p>
+      <!-- DP Live Bar -->
+      <div class="panel-box">
+        <div class="panel-title">📊 DP ANALISIS</div>
+        <div class="dp-live-wrap">
+          <div class="dp-live-row">
+            <span class="dp-live-label">DP OPTIMAL</span>
+            <div class="dp-live-track">
+              <div class="dp-live-fill gold-fill" id="dp-bar-optimal" style="width:0%"></div>
             </div>
-            <div class="dp-bars" id="dp-bars">
-              <!-- Bar per item dirender dp-visualizer.js -->
+            <span class="dp-live-val gold" id="dp-val-optimal">0</span>
+          </div>
+          <div class="dp-live-row">
+            <span class="dp-live-label">PILIHANMU</span>
+            <div class="dp-live-track">
+              <div class="dp-live-fill green-fill" id="dp-bar-player" style="width:0%"></div>
             </div>
+            <span class="dp-live-val green" id="dp-val-player">0</span>
           </div>
-
-          <!-- Mode Detail -->
-          <div id="dp-detail-view" style="display:none;">
-            <div class="dp-formula" id="dp-formula">
-              <code>dp[i][w] = max(dp[i-1][w], dp[i-1][w - cost] + profit)</code>
+          <div class="dp-live-row">
+            <span class="dp-live-label">AI GREEDY</span>
+            <div class="dp-live-track">
+              <div class="dp-live-fill red-fill" id="dp-bar-ai" style="width:0%"></div>
             </div>
-            <div class="dp-table-wrap">
-              <table class="dp-table" id="dp-table">
-                <!-- Tabel dirender dp-visualizer.js -->
-              </table>
-            </div>
-            <div class="dp-traceback" id="dp-traceback">
-              <!-- Traceback dirender dp-visualizer.js -->
-            </div>
+            <span class="dp-live-val red" id="dp-val-ai">0</span>
           </div>
         </div>
-
+        <div class="dp-efficiency" id="dp-efficiency">Pilih barang untuk analisis</div>
       </div>
 
-      <!-- RIGHT: Keranjang + Actions -->
-      <div class="right-col">
-
-        <div class="panel-box">
-          <p class="section-title">Keranjang Dagangan</p>
-          <div id="keranjang-list">
-            <p class="keranjang-empty">Belum ada barang dipilih</p>
-          </div>
-          <div class="keranjang-total" id="keranjang-total" style="display:none;">
-            <span class="kt-label">Total keuntungan</span>
-            <span class="kt-value" id="keranjang-profit">+Rp 0</span>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" id="btn-berangkat" disabled>
-          Berangkat & Jual ➜
-        </button>
-        <button class="btn btn-ghost" id="btn-reset">
-          Kosongkan Keranjang
-        </button>
-
-        <!-- Info rute -->
-        <div class="route-info-box" id="route-info-box">
-          <div class="route-emoji" id="route-emoji">🏙️</div>
-          <div class="route-detail">
-            <p class="route-name" id="route-name">Pasar Makassar</p>
-            <p class="route-location" id="route-location">Sulawesi Selatan</p>
-            <p class="route-desc" id="route-desc">—</p>
-          </div>
-        </div>
-
+      <!-- Tombol Aksi -->
+      <div class="action-btns">
+        <button class="action-btn btn-dp" id="btn-show-dp">🧮 LIHAT TABEL DP</button>
+        <button class="action-btn btn-sell" id="btn-sell" disabled>💰 JUAL BARANG</button>
       </div>
+
+      <!-- Kontrol info -->
+      <div class="controls-info">
+        <div class="ctrl-row"><span class="ctrl-key">WASD</span><span class="ctrl-desc">gerak</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">E</span><span class="ctrl-desc">interaksi</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">TAB</span><span class="ctrl-desc">tabel DP</span></div>
+        <div class="ctrl-row"><span class="ctrl-key">ESC</span><span class="ctrl-desc">menu</span></div>
+      </div>
+
     </div>
-  </main>
+  </div>
 
-  <!-- ========== POPUP: TUTORIAL ========== -->
-  <div class="popup-overlay" id="popup-tutorial">
-    <div class="popup-box">
-      <div class="popup-header">
-        <h2>Cara Bermain</h2>
-        <button class="popup-close" onclick="closePopup('popup-tutorial')">✕</button>
+  <!-- Panel Tabel DP (slide dari bawah) -->
+  <div class="dp-table-panel" id="dp-table-panel">
+    <div class="dp-table-header">
+      <div class="dp-table-title">🧮 TABEL DP KNAPSACK</div>
+      <div class="dp-mode-toggle">
+        <button class="dp-mode-btn active" id="dp-mode-simple" onclick="setDPMode('simple')">SIMPEL</button>
+        <button class="dp-mode-btn" id="dp-mode-detail" onclick="setDPMode('detail')">DETAIL</button>
       </div>
-      <div class="popup-body">
-        <div class="tutorial-step">
-          <span class="tutorial-icon">💰</span>
-          <div>
-            <strong>1. Pilih barang dagangan</strong>
-            <p>Setiap ronde kamu punya modal terbatas. Pilih barang yang menghasilkan keuntungan terbesar.</p>
-          </div>
-        </div>
-        <div class="tutorial-step">
-          <span class="tutorial-icon">🧮</span>
-          <div>
-            <strong>2. Lawan algoritma DP</strong>
-            <p>Algoritma Knapsack DP menghitung kombinasi optimal. Tugasmu: kalahkan atau samakan skornya!</p>
-          </div>
-        </div>
-        <div class="tutorial-step">
-          <span class="tutorial-icon">📊</span>
-          <div>
-            <strong>3. Lihat visualisasi real-time</strong>
-            <p>Tabel DP update otomatis saat kamu memilih barang. Gunakan mode Detail untuk melihat cara kerja algoritma.</p>
-          </div>
-        </div>
-        <div class="tutorial-step">
-          <span class="tutorial-icon">🗺️</span>
-          <div>
-            <strong>4. Selesaikan 5 perjalanan</strong>
-            <p>Kunjungi 5 pasar berbeda dengan budget yang berbeda. Kumpulkan skor tertinggi!</p>
-          </div>
+      <button class="dp-close-btn" id="btn-close-dp">✕ TUTUP</button>
+    </div>
+
+    <!-- Mode Simpel -->
+    <div id="dp-simple-panel">
+      <div class="dp-formula-box">
+        <div class="dp-formula-label">KONSEP:</div>
+        <div class="dp-formula-text" id="dp-concept-text">
+          Pilih barang untuk melihat analisis real-time
         </div>
       </div>
-      <div class="popup-footer">
-        <button class="btn btn-primary" onclick="closePopup('popup-tutorial')">Mulai Berdagang!</button>
+      <div class="dp-bars-container" id="dp-bars-container"></div>
+      <div class="dp-greedy-note" id="dp-greedy-note"></div>
+    </div>
+
+    <!-- Mode Detail -->
+    <div id="dp-detail-panel" style="display:none">
+      <div class="dp-formula-box">
+        <div class="dp-formula-label">RUMUS REKURENS:</div>
+        <div class="dp-formula-code">dp[i][w] = max( dp[i-1][w] , dp[i-1][w-cost[i]] + profit[i] )</div>
+      </div>
+      <div class="dp-table-scroll">
+        <table class="dp-grid" id="dp-grid"></table>
+      </div>
+      <div class="dp-traceback-section">
+        <div class="dp-traceback-title">🔍 JALUR TRACEBACK:</div>
+        <div class="dp-traceback-list" id="dp-traceback-list"></div>
       </div>
     </div>
   </div>
 
-  <!-- ========== POPUP: KONFIRMASI BERANGKAT ========== -->
-  <div class="popup-overlay" id="popup-konfirmasi">
-    <div class="popup-box popup-sm">
-      <div class="popup-header">
-        <h2>Siap Berangkat?</h2>
-        <button class="popup-close" onclick="closePopup('popup-konfirmasi')">✕</button>
+  <!-- AI Bubble komentar -->
+  <div class="ai-bubble" id="ai-bubble" style="display:none">
+    <div class="ai-bubble-text" id="ai-bubble-text"></div>
+  </div>
+
+</div>
+
+<!-- ========== POPUP: CARA BERMAIN ========== -->
+<div class="popup-overlay" id="popup-tutorial">
+  <div class="popup-box">
+    <div class="popup-header">
+      <div class="popup-title">❓ CARA BERMAIN</div>
+      <button class="popup-close" onclick="closePopup('popup-tutorial')">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="tutorial-grid">
+        <div class="tutorial-card">
+          <div class="tutorial-icon">🗺️</div>
+          <div class="tutorial-text">
+            <strong>Jelajahi Peta</strong>
+            <p>Gerakkan pedagang dengan WASD atau Arrow Keys. Dekati NPC penjual untuk membeli barang.</p>
+          </div>
+        </div>
+        <div class="tutorial-card">
+          <div class="tutorial-icon">🧮</div>
+          <div class="tutorial-text">
+            <strong>Kalahkan Algoritma DP</strong>
+            <p>Pilih kombinasi barang terbaik dalam budget. Algoritma Knapsack DP menghitung nilai optimal — tugasmu menyamainya!</p>
+          </div>
+        </div>
+        <div class="tutorial-card">
+          <div class="tutorial-icon">🤖</div>
+          <div class="tutorial-text">
+            <strong>Lawan AI Greedy</strong>
+            <p>AI rival menggunakan Greedy Algorithm — selalu ambil rasio tertinggi. Tapi greedy tidak selalu optimal!</p>
+          </div>
+        </div>
+        <div class="tutorial-card">
+          <div class="tutorial-icon">📊</div>
+          <div class="tutorial-text">
+            <strong>Lihat Tabel DP</strong>
+            <p>Tekan TAB untuk melihat tabel DP real-time. Mode Detail menampilkan animasi pengisian tabel dan traceback path.</p>
+          </div>
+        </div>
       </div>
-      <div class="popup-body">
-        <p id="konfirmasi-summary"></p>
-      </div>
-      <div class="popup-footer">
-        <button class="btn btn-ghost" onclick="closePopup('popup-konfirmasi')">Kembali</button>
-        <button class="btn btn-primary" id="btn-konfirmasi-ok">Ya, Berangkat!</button>
+      <div class="tutorial-algo">
+        <div class="tutorial-algo-title">ALGORITMA KNAPSACK 0/1</div>
+        <div class="tutorial-algo-code">
+          for i = 1 to n:<br>
+          &nbsp;&nbsp;for w = 0 to W:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;dp[i][w] = dp[i-1][w]<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;if cost[i] ≤ w:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dp[i][w] = max(dp[i][w],<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dp[i-1][w-cost[i]] + profit[i])
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- ========== POPUP: NPC COMMENT ========== -->
-  <div class="popup-npc" id="popup-npc">
-    <span class="npc-emoji" id="npc-emoji">🧑‍🌾</span>
-    <div class="npc-bubble" id="npc-bubble">...</div>
-  </div>
-
-  <!-- ========== POPUP: HASIL RONDE ========== -->
-  <div class="popup-overlay" id="popup-hasil">
-    <div class="popup-box popup-lg">
-      <div class="popup-header">
-        <h2 id="hasil-title">Hasil Ronde</h2>
-        <button class="popup-close" onclick="closePopup('popup-hasil')">✕</button>
-      </div>
-      <div class="popup-body">
-
-        <!-- Skor comparison -->
-        <div class="hasil-compare">
-          <div class="hasil-col">
-            <div class="hasil-col-label">Keuntunganmu</div>
-            <div class="hasil-col-score green" id="hasil-player-score">0</div>
-          </div>
-          <div class="hasil-vs">VS</div>
-          <div class="hasil-col">
-            <div class="hasil-col-label">Skor DP Optimal</div>
-            <div class="hasil-col-score gold" id="hasil-dp-score">0</div>
-          </div>
-        </div>
-
-        <div class="hasil-message" id="hasil-message"></div>
-        <div class="hasil-efficiency" id="hasil-efficiency"></div>
-
-        <!-- Pilihan optimal DP -->
-        <div class="dp-optimal-box">
-          <p class="dp-optimal-title">🧮 Pilihan optimal menurut DP:</p>
-          <div class="dp-optimal-items" id="dp-optimal-items"></div>
-        </div>
-
-        <!-- Traceback steps -->
-        <div class="traceback-box" id="traceback-box">
-          <p class="dp-optimal-title">🔍 Langkah traceback algoritma:</p>
-          <div class="traceback-steps" id="traceback-steps"></div>
-        </div>
-
-      </div>
-      <div class="popup-footer">
-        <button class="btn btn-primary" id="btn-next-round">Perjalanan Berikutnya ➜</button>
-        <button class="btn btn-primary" id="btn-finish-game" style="display:none;">Lihat Hasil Akhir 🏁</button>
-      </div>
+    <div class="popup-footer">
+      <button class="menu-btn" onclick="closePopup('popup-tutorial')">▶ MENGERTI!</button>
     </div>
   </div>
+</div>
 
-  <!-- ========== POPUP: AKHIR PERJALANAN ========== -->
-  <div class="popup-overlay" id="popup-akhir">
-    <div class="popup-box popup-lg">
-      <div class="popup-header">
-        <h2>Perjalanan Selesai! 🎉</h2>
-      </div>
-      <div class="popup-body">
-        <div class="akhir-title" id="akhir-title"></div>
-        <div class="hasil-compare">
-          <div class="hasil-col">
-            <div class="hasil-col-label">Total Keuntunganmu</div>
-            <div class="hasil-col-score green" id="akhir-player-total">0</div>
-          </div>
-          <div class="hasil-vs">VS</div>
-          <div class="hasil-col">
-            <div class="hasil-col-label">Total DP Optimal</div>
-            <div class="hasil-col-score gold" id="akhir-dp-total">0</div>
-          </div>
-        </div>
-        <div class="akhir-stats" id="akhir-stats"></div>
-        <div class="akhir-history" id="akhir-history"></div>
-
-        <!-- Form simpan skor -->
-        <div class="save-score-box">
-          <p class="save-score-label">Masukkan namamu untuk leaderboard:</p>
-          <div class="save-score-input">
-            <input type="text" id="input-nama" placeholder="Nama pedagangmu..." maxlength="30" />
-            <button class="btn btn-primary" id="btn-save-score">Simpan Skor</button>
-          </div>
-          <p class="save-score-msg" id="save-score-msg"></p>
-        </div>
-      </div>
-      <div class="popup-footer">
-        <button class="btn btn-ghost" id="btn-main-menu" onclick="location.reload()">Main Lagi 🔄</button>
-        <button class="btn btn-primary" id="btn-open-leaderboard">Lihat Leaderboard 🏆</button>
-      </div>
+<!-- ========== POPUP: INPUT NAMA ========== -->
+<div class="popup-overlay" id="popup-nama">
+  <div class="popup-box popup-sm">
+    <div class="popup-header">
+      <div class="popup-title">👤 NAMA PEDAGANGMU</div>
+    </div>
+    <div class="popup-body" style="text-align:center">
+      <div class="nama-sprite">🧑‍🌾</div>
+      <input type="text" class="nama-input" id="input-nama-player"
+        placeholder="Masukkan nama..." maxlength="10" />
+      <div class="nama-hint">maks 10 karakter, akan muncul di leaderboard</div>
+    </div>
+    <div class="popup-footer">
+      <button class="menu-btn" id="btn-confirm-nama">▶ MULAI!</button>
     </div>
   </div>
+</div>
 
-  <!-- ========== POPUP: LEADERBOARD ========== -->
-  <div class="popup-overlay" id="popup-leaderboard">
-    <div class="popup-box">
-      <div class="popup-header">
-        <h2>🏆 Leaderboard</h2>
-        <button class="popup-close" onclick="closePopup('popup-leaderboard')">✕</button>
-      </div>
-      <div class="popup-body">
-        <div class="leaderboard-list" id="leaderboard-list">
-          <!-- Dirender oleh ui.js -->
+<!-- ========== POPUP: DIALOG NPC / TOKO ========== -->
+<div class="popup-overlay" id="popup-shop">
+  <div class="popup-box popup-shop">
+    <div class="popup-header">
+      <div class="npc-header">
+        <div class="npc-avatar" id="shop-npc-avatar">🧑‍🌾</div>
+        <div>
+          <div class="popup-title" id="shop-npc-name">PAK HASAN</div>
+          <div class="npc-subtitle" id="shop-npc-sub">Pedagang Rempah</div>
         </div>
       </div>
-      <div class="popup-footer">
-        <button class="btn btn-ghost" onclick="closePopup('popup-leaderboard')">Tutup</button>
+      <button class="popup-close" onclick="closePopup('popup-shop')">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="npc-dialog" id="npc-dialog-text">"Selamat datang! Mau beli apa?"</div>
+      <div class="shop-items" id="shop-items">
+        <!-- Dirender oleh npc.js -->
+      </div>
+      <div class="shop-dp-hint" id="shop-dp-hint">
+        <!-- DP hint realtime -->
       </div>
     </div>
+    <div class="popup-footer">
+      <button class="menu-btn secondary" onclick="closePopup('popup-shop')">✕ TUTUP TOKO</button>
+      <button class="menu-btn" id="btn-done-shopping">✓ SELESAI BELANJA</button>
+    </div>
   </div>
+</div>
 
-  <!-- ========== SCRIPTS ========== -->
-  <script src="js/api.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/dp-visualizer.js"></script>
-  <script src="js/popup.js"></script>
-  <script src="js/main.js"></script>
+<!-- ========== POPUP: FASE KALKULASI DP ========== -->
+<div class="popup-overlay" id="popup-kalkulasi">
+  <div class="popup-box popup-lg">
+    <div class="popup-header">
+      <div class="popup-title">🧮 FASE KALKULASI</div>
+    </div>
+    <div class="popup-body">
+      <div class="kalkulasi-intro" id="kalkulasi-intro">
+        Waktu berdagang habis! Sekarang algoritma DP menghitung kombinasi terbaik...
+      </div>
+      <div class="kalkulasi-dp-mode">
+        <button class="dp-mode-btn active" id="kalk-mode-simple" onclick="setKalkMode('simple')">SIMPEL</button>
+        <button class="dp-mode-btn" id="kalk-mode-detail" onclick="setKalkMode('detail')">DETAIL</button>
+      </div>
+
+      <!-- Simpel view kalkulasi -->
+      <div id="kalk-simple">
+        <div class="kalk-bars" id="kalk-bars"></div>
+        <div class="kalk-concept" id="kalk-concept"></div>
+      </div>
+
+      <!-- Detail view kalkulasi -->
+      <div id="kalk-detail" style="display:none">
+        <div class="dp-formula-box">
+          <div class="dp-formula-code">dp[i][w] = max( dp[i-1][w] , dp[i-1][w-cost[i]] + profit[i] )</div>
+        </div>
+        <div class="dp-table-scroll">
+          <table class="dp-grid" id="kalk-dp-grid"></table>
+        </div>
+        <div class="dp-traceback-section">
+          <div class="dp-traceback-title">🔍 TRACEBACK PATH:</div>
+          <div class="dp-traceback-list" id="kalk-traceback-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="menu-btn" id="btn-lihat-hasil">▶ LIHAT HASIL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== POPUP: HASIL RONDE ========== -->
+<div class="popup-overlay" id="popup-hasil">
+  <div class="popup-box popup-lg">
+    <div class="popup-header">
+      <div class="popup-title" id="hasil-title">HASIL RONDE</div>
+      <div class="hasil-location" id="hasil-location"></div>
+    </div>
+    <div class="popup-body">
+
+      <!-- Scoreboard 3 kolom -->
+      <div class="hasil-scoreboard">
+        <div class="hasil-col">
+          <div class="hasil-col-label">KAMU</div>
+          <div class="hasil-col-score green" id="hasil-player">+0</div>
+          <div class="hasil-col-sub" id="hasil-player-eff"></div>
+        </div>
+        <div class="hasil-col">
+          <div class="hasil-col-label">DP OPTIMAL</div>
+          <div class="hasil-col-score gold" id="hasil-dp">+0</div>
+          <div class="hasil-col-sub">100% optimal</div>
+        </div>
+        <div class="hasil-col">
+          <div class="hasil-col-label">AI GREEDY</div>
+          <div class="hasil-col-score red" id="hasil-ai">+0</div>
+          <div class="hasil-col-sub" id="hasil-ai-eff"></div>
+        </div>
+      </div>
+
+      <div class="hasil-verdict" id="hasil-verdict"></div>
+
+      <!-- Bedah keputusan -->
+      <div class="hasil-analysis">
+        <div class="analysis-title">🔍 BEDAH KEPUTUSAN:</div>
+        <div class="analysis-items" id="analysis-items"></div>
+      </div>
+
+      <!-- Rumus yang dipakai -->
+      <div class="hasil-formula">
+        <div class="formula-label">RUMUS DP YANG DIPAKAI:</div>
+        <div class="formula-code">dp[i][w] = max( dp[i-1][w] , dp[i-1][w - cost[i]] + profit[i] )</div>
+      </div>
+
+    </div>
+    <div class="popup-footer">
+      <button class="menu-btn" id="btn-next-day">▶ HARI BERIKUTNYA</button>
+      <button class="menu-btn" id="btn-finish-journey" style="display:none">🏁 AKHIR PERJALANAN</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== POPUP: AKHIR PERJALANAN ========== -->
+<div class="popup-overlay" id="popup-akhir">
+  <div class="popup-box popup-lg">
+    <div class="popup-header">
+      <div class="popup-title">🎉 PERJALANAN SELESAI!</div>
+    </div>
+    <div class="popup-body">
+      <div class="akhir-title" id="akhir-title">PEDAGANG LEGENDARIS</div>
+      <div class="akhir-scoreboard">
+        <div class="akhir-stat">
+          <div class="akhir-stat-label">TOTAL SKOR</div>
+          <div class="akhir-stat-val green" id="akhir-total-player">0</div>
+        </div>
+        <div class="akhir-stat">
+          <div class="akhir-stat-label">DP OPTIMAL</div>
+          <div class="akhir-stat-val gold" id="akhir-total-dp">0</div>
+        </div>
+        <div class="akhir-stat">
+          <div class="akhir-stat-label">EFISIENSI</div>
+          <div class="akhir-stat-val" id="akhir-efficiency">0%</div>
+        </div>
+        <div class="akhir-stat">
+          <div class="akhir-stat-label">MENANG VS AI</div>
+          <div class="akhir-stat-val" id="akhir-wins">0/5</div>
+        </div>
+      </div>
+      <div class="akhir-history" id="akhir-history"></div>
+      <div class="save-score-wrap">
+        <div class="save-score-label">SIMPAN KE LEADERBOARD:</div>
+        <div class="save-score-row">
+          <input type="text" class="nama-input" id="input-nama-akhir" placeholder="Nama pedagang..." maxlength="10" />
+          <button class="menu-btn" id="btn-save-akhir">SIMPAN</button>
+        </div>
+        <div class="save-msg" id="save-msg"></div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="menu-btn secondary" onclick="location.reload()">🔄 MAIN LAGI</button>
+      <button class="menu-btn" id="btn-akhir-leaderboard">🏆 LEADERBOARD</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== POPUP: LEADERBOARD ========== -->
+<div class="popup-overlay" id="popup-leaderboard">
+  <div class="popup-box">
+    <div class="popup-header">
+      <div class="popup-title">🏆 LEADERBOARD</div>
+      <button class="popup-close" onclick="closePopup('popup-leaderboard')">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="lb-list" id="lb-list">
+        <div class="lb-loading">Memuat data...</div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="menu-btn secondary" onclick="closePopup('popup-leaderboard')">✕ TUTUP</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCRIPTS ========== -->
+<script src="js/api.js"></script>
+<script src="js/dp-visualizer.js"></script>
+<script src="js/map.js"></script>
+<script src="js/player.js"></script>
+<script src="js/npc.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/popup.js"></script>
+<script src="js/game-engine.js"></script>
+<script src="js/main.js"></script>
 
 </body>
 </html>
