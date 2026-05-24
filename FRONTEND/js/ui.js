@@ -1,306 +1,323 @@
-// ========== RENDER ITEMS GRID ========== //
-function renderItems(items, selectedIds, budget) {
-  const grid = document.getElementById("items-grid");
-  const spent = getSpentFromIds(selectedIds, items);
-  const remaining = budget - spent;
+// ========== RENDER HUD ========== //
+function renderHUD(round, routeName, budget, totalScore) {
+  const state = window.gameState;
 
-  grid.innerHTML = items
-    .map((item) => {
-      const isSelected = selectedIds.includes(item.id);
-      const canAfford = item.cost <= remaining;
-      const ratio = (item.profit / item.cost).toFixed(2);
+  document.getElementById('hud-player-name').textContent =
+    state.playerName || 'PEDAGANG';
+  document.getElementById('hud-location').textContent =
+    `📍 ${routeName.toUpperCase()}`;
+  document.getElementById('hud-day').textContent =
+    `HARI ${round + 1} / 5`;
+  document.getElementById('hud-budget').textContent =
+    `Rp ${budget}`;
+  document.getElementById('hud-score').textContent =
+    `+${totalScore}`;
 
-      let cls = "item-card";
-      if (isSelected) cls += " selected";
-      else if (!canAfford) cls += " disabled";
-
-      return `
-        <div class="${cls}" data-id="${item.id}" onclick="handleItemClick(${item.id})">
-          <div class="item-check">✓</div>
-          <span class="item-emoji">${item.emoji}</span>
-          <div class="item-name">${item.name}</div>
-          <div class="item-stats">
-            <span class="item-cost">Rp ${item.cost}</span>
-            <span class="item-profit">+${item.profit}</span>
-          </div>
-          <div class="item-ratio">Rasio: ${ratio}x</div>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-// ========== RENDER KERANJANG ========== //
-function renderKeranjang(selectedIds, items) {
-  const list = document.getElementById("keranjang-list");
-  const totalEl = document.getElementById("keranjang-total");
-  const profitEl = document.getElementById("keranjang-profit");
-
-  if (selectedIds.length === 0) {
-    list.innerHTML = `<p class="keranjang-empty">Belum ada barang dipilih</p>`;
-    totalEl.style.display = "none";
-    return;
-  }
-
-  let totalProfit = 0;
-  let html = "";
-
-  selectedIds.forEach((id) => {
-    const item = items.find((i) => i.id === id);
-    if (!item) return;
-    totalProfit += item.profit;
-    html += `
-      <div class="keranjang-item anim-slide-right">
-        <span class="ki-emoji">${item.emoji}</span>
-        <span class="ki-name">${item.name}</span>
-        <span class="ki-profit">+${item.profit}</span>
-        <button class="ki-remove" onclick="handleRemoveItem(${item.id})" title="Hapus">✕</button>
-      </div>
-    `;
-  });
-
-  list.innerHTML = html;
-  totalEl.style.display = "flex";
-  profitEl.textContent = `+Rp ${totalProfit}`;
-}
-
-// ========== RENDER STATUS BAR ========== //
-function renderStatusBar(selectedIds, items, budget, totalScore) {
-  const spent = getSpentFromIds(selectedIds, items);
-  const remaining = budget - spent;
-  const profit = getProfitFromIds(selectedIds, items);
-  const pct = Math.max(0, (remaining / budget) * 100);
-
-  // Budget
-  document.getElementById("stat-budget").textContent = `Rp ${remaining}`;
-  const fill = document.getElementById("budget-fill");
-  fill.style.width = pct + "%";
-
-  if (pct < 20) {
-    fill.classList.add("danger");
-  } else {
-    fill.classList.remove("danger");
-  }
-
-  // Profit
-  const profitEl = document.getElementById("stat-profit");
-  profitEl.textContent = `+Rp ${profit}`;
-  profitEl.classList.remove("updated");
-  void profitEl.offsetWidth; // trigger reflow untuk restart animasi
-  profitEl.classList.add("updated");
-
-  // Total skor
-  document.getElementById("stat-total").textContent = `+Rp ${totalScore}`;
-
-  // Tombol berangkat
-  document.getElementById("btn-berangkat").disabled = selectedIds.length === 0;
+  // Hearts — 5 hearts, berkurang tiap kalah
+  const wins = state.gameHistory
+    ? state.gameHistory.filter(r => r.outcome === 'win' || r.outcome === 'tie').length
+    : 0;
+  const hearts = '❤️'.repeat(5);
+  document.getElementById('hud-hearts').textContent = hearts;
 }
 
 // ========== RENDER STAGE DOTS ========== //
 function renderStageDots(currentRound, totalRounds) {
-  const dots = document.getElementById("stage-dots");
-  const label = document.getElementById("stage-label");
-
-  dots.innerHTML = Array.from({ length: totalRounds })
-    .map((_, i) => {
-      let cls = "stage-dot";
-      if (i < currentRound) cls += " done";
-      else if (i === currentRound) cls += " current";
-      return `<div class="${cls}" title="Ronde ${i + 1}"></div>`;
-    })
-    .join("");
-
-  label.textContent = `Ronde ${currentRound + 1} dari ${totalRounds}`;
-}
-
-// ========== RENDER ROUTE INFO ========== //
-function renderRouteInfo(route) {
-  document.getElementById("route-emoji").textContent = route.emoji;
-  document.getElementById("route-name").textContent = route.name;
-  document.getElementById("route-location").textContent = route.location;
-  document.getElementById("route-desc").textContent = route.description;
+  // Stage dots tidak ada di versi baru (ada di HUD)
+  // Tapi tetap update hud-day
+  document.getElementById('hud-day').textContent =
+    `HARI ${currentRound + 1} / ${totalRounds}`;
 }
 
 // ========== RENDER HASIL RONDE ========== //
 function renderHasil(data) {
   const {
-    playerScore,
-    dpScore,
-    outcome,
-    efficiency,
-    diff,
-    resultMessage,
-    dpChosenIds,
-    tracebackPath,
-    items,
+    playerScore, dpScore, outcome,
+    efficiency, diff, resultMessage,
+    dpChosenIds, tracebackPath, items,
+    playerItems, round,
   } = data;
 
-  // Title popup
+  const ROUTES_NAME = [
+    'Pasar Makassar', 'Pelabuhan Pare-Pare',
+    'Pekan Toraja',   'Pasar Bone', 'Pasar Palopo',
+  ];
+
+  // Title & lokasi
   const titles = {
-    win:   "🏆 Kamu Mengalahkan Algoritma!",
-    tie:   "⚖️ Imbang Sempurna!",
-    close: "📈 Hampir Optimal!",
-    lose:  "🧮 Algoritma Lebih Unggul",
+    win:   '🏆 MENANG!',
+    tie:   '⚖️ IMBANG!',
+    close: '📈 HAMPIR!',
+    lose:  '🧮 KALAH!',
   };
-  document.getElementById("hasil-title").textContent = titles[outcome];
+  document.getElementById('hasil-title').textContent    = titles[outcome] || 'HASIL';
+  document.getElementById('hasil-location').textContent = ROUTES_NAME[round] || '';
 
-  // Skor
-  document.getElementById("hasil-player-score").textContent = `+${playerScore}`;
-  document.getElementById("hasil-dp-score").textContent = `+${dpScore}`;
+  // Skor 3 kolom
+  document.getElementById('hasil-player').textContent = `+${playerScore}`;
+  document.getElementById('hasil-dp').textContent     = `+${dpScore}`;
+  document.getElementById('hasil-ai').textContent     = `+${aiState.totalProfit}`;
 
-  // Pesan & efisiensi
-  const msgEl = document.getElementById("hasil-message");
-  msgEl.textContent = resultMessage;
-  msgEl.className = `hasil-message ${outcome}`;
+  const playerEff = dpScore > 0
+    ? ((playerScore / dpScore) * 100).toFixed(1) : 100;
+  const aiEff = dpScore > 0
+    ? ((aiState.totalProfit / dpScore) * 100).toFixed(1) : 0;
 
-  document.getElementById("hasil-efficiency").textContent =
-    `Efisiensi: ${efficiency}% dari optimal${diff > 0 ? ` (selisih Rp ${diff})` : ""}`;
+  document.getElementById('hasil-player-eff').textContent = `${playerEff}% efisiensi`;
+  document.getElementById('hasil-ai-eff').textContent     = `${aiEff}% efisiensi`;
 
-  // Pilihan optimal DP
-  const optimalEl = document.getElementById("dp-optimal-items");
-  optimalEl.innerHTML = data.dpChosenIds
-    .map((id) => {
-      const item = data.items.find((i) => i.id === id);
-      if (!item) return "";
-      const matched = data.playerItems.some((pi) => pi.id === id);
-      return `
-        <div class="dp-item-chip ${matched ? "matched" : ""}">
-          ${item.emoji} ${item.name}
-          <span class="chip-profit">+${item.profit}</span>
-        </div>
-      `;
-    })
-    .join("");
+  // Verdict
+  const verdictEl = document.getElementById('hasil-verdict');
+  verdictEl.textContent  = resultMessage;
+  verdictEl.style.color  = {
+    win: 'var(--green)', tie: 'var(--cyan)',
+    close: 'var(--gold)', lose: 'var(--red)',
+  }[outcome] || 'var(--text)';
 
-  // Traceback steps
-  renderTracebackSteps(tracebackPath);
+  // Bedah keputusan — item per item
+  renderAnalysisItems(items, playerItems, dpChosenIds);
 
+  // Traceback di popup kalkulasi sudah ditampilkan sebelumnya
   // Tombol next/finish
-  const isLast = data.round === 4;
-  document.getElementById("btn-next-round").style.display = isLast ? "none" : "block";
-  document.getElementById("btn-finish-game").style.display = isLast ? "block" : "none";
+  const isLast = round === 4;
+  document.getElementById('btn-next-day').style.display      = isLast ? 'none'  : 'block';
+  document.getElementById('btn-finish-journey').style.display = isLast ? 'block' : 'none';
 }
 
-// ========== RENDER TRACEBACK STEPS ========== //
-function renderTracebackSteps(tracebackPath) {
-  const el = document.getElementById("traceback-steps");
-  el.innerHTML = tracebackPath
-    .map((step, i) => `
-      <div class="traceback-step delay-${Math.min(i + 1, 8)}">
-        <span class="traceback-action ${step.action === "DIAMBIL" ? "diambil" : "dilewati"}">
-          ${step.action}
-        </span>
-        <span style="flex:1; color:var(--paper2);">
-          ${step.itemName}
-        </span>
-        <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--muted);">
-          budget ${step.budgetBefore} → ${step.budgetAfter}
-        </span>
-      </div>
-    `)
-    .join("");
+// ========== RENDER ANALYSIS ITEMS ========== //
+function renderAnalysisItems(items, playerItems, dpChosenIds) {
+  const el = document.getElementById('analysis-items');
+  if (!el || !items) return;
+
+  const playerIds = (playerItems || []).map(i => i.id);
+  let html = '';
+
+  items.forEach(item => {
+    const inPlayer  = playerIds.includes(item.id);
+    const inDP      = dpChosenIds.includes(item.id);
+
+    if (inPlayer && inDP) {
+      html += `
+        <div class="analysis-item correct">
+          <span class="analysis-icon">✅</span>
+          <span class="analysis-name">
+            ${item.emoji} ${item.name}
+            <span class="analysis-reason">
+              Pilihan tepat — DP juga memilih ini (+${item.profit})
+            </span>
+          </span>
+        </div>`;
+    } else if (inDP && !inPlayer) {
+      html += `
+        <div class="analysis-item missed">
+          <span class="analysis-icon">❌</span>
+          <span class="analysis-name">
+            ${item.emoji} ${item.name}
+            <span class="analysis-reason">
+              Terlewat — DP memilih ini, hasilnya +${item.profit}
+              dengan modal Rp ${item.cost} (rasio ${(item.profit/item.cost).toFixed(2)}x)
+            </span>
+          </span>
+        </div>`;
+    } else if (inPlayer && !inDP) {
+      html += `
+        <div class="analysis-item extra">
+          <span class="analysis-icon">⚠️</span>
+          <span class="analysis-name">
+            ${item.emoji} ${item.name}
+            <span class="analysis-reason">
+              Kamu ambil tapi bukan pilihan DP — modal Rp ${item.cost}
+              bisa dipakai untuk kombinasi yang lebih baik
+            </span>
+          </span>
+        </div>`;
+    }
+  });
+
+  if (!html) {
+    html = `<div style="color:var(--text3); font-family:var(--vt-font); font-size:14px">
+      Tidak ada item yang dipilih.
+    </div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 // ========== RENDER AKHIR PERJALANAN ========== //
 function renderAkhir(gameHistory, totalPlayer, totalDP) {
-  const wins   = gameHistory.filter((r) => r.outcome === "win").length;
-  const ties   = gameHistory.filter((r) => r.outcome === "tie").length;
-  const efficiency = totalDP > 0
-    ? ((totalPlayer / totalDP) * 100).toFixed(1)
-    : 100;
+  const wins = gameHistory.filter(
+    r => r.outcome === 'win'
+  ).length;
+  const ties = gameHistory.filter(
+    r => r.outcome === 'tie'
+  ).length;
+  const eff  = totalDP > 0
+    ? ((totalPlayer / totalDP) * 100).toFixed(1) : 100;
 
   // Judul
-  let title = "";
-  if (wins >= 4)      title = "🏆 Pedagang Legendaris!";
-  else if (wins >= 3) title = "⭐ Pedagang Ulung!";
-  else if (wins >= 2) title = "👍 Pedagang Handal";
-  else if (wins >= 1) title = "📚 Pedagang Pemula";
-  else                title = "🌱 Terus Belajar!";
+  let title = '';
+  if (wins >= 4)      title = '👑 PEDAGANG LEGENDARIS';
+  else if (wins >= 3) title = '⭐ PEDAGANG ULUNG';
+  else if (wins >= 2) title = '👍 PEDAGANG HANDAL';
+  else if (wins >= 1) title = '📚 PEDAGANG PEMULA';
+  else                title = '🌱 TERUS BELAJAR!';
 
-  document.getElementById("akhir-title").textContent = title;
-  document.getElementById("akhir-player-total").textContent = `+${totalPlayer}`;
-  document.getElementById("akhir-dp-total").textContent = `+${totalDP}`;
-
-  // Stats
-  document.getElementById("akhir-stats").innerHTML = `
-    <div class="akhir-stat-box">
-      <div class="akhir-stat-label">Ronde Menang</div>
-      <div class="akhir-stat-value" style="color:var(--green2)">${wins}</div>
-    </div>
-    <div class="akhir-stat-box">
-      <div class="akhir-stat-label">Efisiensi</div>
-      <div class="akhir-stat-value">${efficiency}%</div>
-    </div>
-    <div class="akhir-stat-box">
-      <div class="akhir-stat-label">Selisih DP</div>
-      <div class="akhir-stat-value" style="color:#e05a45">-${totalDP - totalPlayer}</div>
-    </div>
-  `;
+  document.getElementById('akhir-title').textContent         = title;
+  document.getElementById('akhir-total-player').textContent  = `+${totalPlayer}`;
+  document.getElementById('akhir-total-dp').textContent      = `+${totalDP}`;
+  document.getElementById('akhir-efficiency').textContent    = `${eff}%`;
+  document.getElementById('akhir-wins').textContent          = `${wins + ties}/5`;
 
   // Riwayat per ronde
   const ROUTES_NAME = [
-    "Pasar Makassar",
-    "Pelabuhan Pare-Pare",
-    "Pekan Toraja",
-    "Pasar Bone",
-    "Pasar Palopo",
+    'Makassar', 'Pare-Pare', 'Toraja', 'Bone', 'Palopo',
   ];
 
-  document.getElementById("akhir-history").innerHTML = `
-    <p class="akhir-history-title">Riwayat Perjalanan</p>
-    ${gameHistory
-      .map((r, i) => `
-        <div class="akhir-round-row">
-          <span class="akhir-round-name">${ROUTES_NAME[i]}</span>
-          <span class="akhir-round-badge ${r.outcome}">${r.outcome.toUpperCase()}</span>
-          <span class="akhir-round-score">+${r.playerScore} / +${r.dpScore}</span>
-        </div>
-      `)
-      .join("")}
+  const histEl = document.getElementById('akhir-history');
+  histEl.innerHTML = `
+    <div class="akhir-history-title">RIWAYAT PERJALANAN</div>
+    ${gameHistory.map((r, i) => `
+      <div class="akhir-round-row">
+        <span class="akhir-round-name">
+          HARI ${i+1} — ${ROUTES_NAME[i]}
+        </span>
+        <span class="akhir-round-badge ${r.outcome}">
+          ${r.outcome.toUpperCase()}
+        </span>
+        <span class="akhir-round-score">
+          +${r.playerScore} / +${r.dpScore}
+        </span>
+      </div>
+    `).join('')}
   `;
 }
 
 // ========== RENDER LEADERBOARD ========== //
 function renderLeaderboard(data) {
-  const el = document.getElementById("leaderboard-list");
-
+  const el = document.getElementById('lb-list');
   if (!data || data.length === 0) {
-    el.innerHTML = `<div class="lb-empty">Belum ada skor tersimpan.<br>Jadilah yang pertama!</div>`;
+    el.innerHTML = `
+      <div class="lb-empty">
+        Belum ada skor.<br>Jadilah yang pertama!
+      </div>`;
     return;
   }
 
-  const medals = ["🥇", "🥈", "🥉"];
-  el.innerHTML = data
-    .map((row, i) => `
-      <div class="lb-row">
-        <span class="lb-rank">${medals[i] || row.rank}</span>
-        <span class="lb-name">${row.name}</span>
-        <span class="lb-efficiency">${row.efficiency}%</span>
-        <span class="lb-score">+${row.score}</span>
-      </div>
-    `)
-    .join("");
+  const medals = ['🥇', '🥈', '🥉'];
+  el.innerHTML = data.map((row, i) => `
+    <div class="lb-row">
+      <span class="lb-rank">${medals[i] || '#' + row.rank}</span>
+      <span class="lb-name">${row.name}</span>
+      <span class="lb-eff">${row.efficiency}%</span>
+      <span class="lb-score">+${row.score}</span>
+    </div>
+  `).join('');
 }
 
-// ========== RENDER SHIMMER LOADING ========== //
-function renderShimmer() {
-  const grid = document.getElementById("items-grid");
-  grid.innerHTML = Array(8)
-    .fill(`<div class="shimmer shimmer-card"></div>`)
-    .join("");
+// ========== PHASE OVERLAY ========== //
+function showPhaseOverlay(text, duration = 1800) {
+  return new Promise(resolve => {
+    const existing = document.querySelector('.phase-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'phase-overlay';
+    overlay.innerHTML = `<div class="phase-text">${text}</div>`;
+
+    document.getElementById('game-screen').appendChild(overlay);
+
+    setTimeout(() => {
+      overlay.remove();
+      resolve();
+    }, duration);
+  });
 }
 
-// ========== HELPER FUNCTIONS ========== //
-function getSpentFromIds(ids, items) {
-  return ids.reduce((sum, id) => {
-    const item = items.find((i) => i.id === id);
-    return sum + (item ? item.cost : 0);
-  }, 0);
+// ========== TIMER DISPLAY ========== //
+function updateTimerDisplay(seconds) {
+  const el = document.getElementById('hud-timer');
+  el.textContent = seconds;
+
+  if (seconds <= 10) {
+    el.classList.add('warning');
+  } else {
+    el.classList.remove('warning');
+  }
 }
 
-function getProfitFromIds(ids, items) {
-  return ids.reduce((sum, id) => {
-    const item = items.find((i) => i.id === id);
-    return sum + (item ? item.profit : 0);
-  }, 0);
+// ========== POPUP OPEN / CLOSE ========== //
+function openPopup(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePopup(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('show');
+  const anyOpen = document.querySelector('.popup-overlay.show');
+  if (!anyOpen) document.body.style.overflow = '';
+}
+
+// ========== LEADERBOARD POPUP ========== //
+async function showLeaderboard() {
+  openPopup('popup-leaderboard');
+  document.getElementById('lb-list').innerHTML =
+    `<div class="lb-loading">
+      <div style="animation:spin 1s linear infinite;
+        display:inline-block;font-size:20px">⏳</div>
+    </div>`;
+
+  const result = await apiGetLeaderboard();
+  if (result.success) {
+    renderLeaderboard(result.data.leaderboard);
+  } else {
+    document.getElementById('lb-list').innerHTML =
+      `<div class="lb-empty">Gagal memuat.<br>${result.error}</div>`;
+  }
+}
+
+// ========== SAVE SCORE ========== //
+async function handleSaveScore(inputId, msgId) {
+  const nameInput = document.getElementById(inputId);
+  const msgEl     = document.getElementById(msgId);
+  const name      = nameInput.value.trim();
+
+  if (!name) {
+    msgEl.textContent = 'Masukkan namamu dulu!';
+    msgEl.className   = 'save-msg err';
+    nameInput.focus();
+    return;
+  }
+
+  const state      = window.gameState;
+  const wins       = state.gameHistory.filter(r => r.outcome === 'win').length;
+  const efficiency = state.totalDPScore > 0
+    ? parseFloat(((state.totalPlayerScore / state.totalDPScore) * 100).toFixed(1))
+    : 100;
+
+  msgEl.textContent = 'Menyimpan...';
+  msgEl.className   = 'save-msg';
+
+  const result = await apiSaveScore(
+    name, state.totalPlayerScore, efficiency, wins
+  );
+
+  if (result.success) {
+    msgEl.textContent = result.data.updated
+      ? `✅ Skor diperbarui!`
+      : `✅ Tersimpan!`;
+    msgEl.className   = 'save-msg ok';
+    nameInput.disabled = true;
+
+    const rankResult = await apiGetRank(state.totalPlayerScore);
+    if (rankResult.success) {
+      msgEl.textContent += ` ${rankResult.data.message}`;
+    }
+  } else {
+    msgEl.textContent = `❌ ${result.error}`;
+    msgEl.className   = 'save-msg err';
+  }
 }
