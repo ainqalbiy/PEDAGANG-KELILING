@@ -641,3 +641,112 @@
 
 .toast.toast-green { border-color: #4ecb71; color: #4ecb71; }
 .toast.toast-red   { border-color: #e05555; color: #e05555; }
+/* ========== WARNA TOKO BERBEDA TIAP JENIS ========== */
+.tile-shop.shop-rempah  { background-color: #5c2a0a; border-color: #8b3a0f; box-shadow: inset 0 0 0 2px #d4622a; }
+.tile-shop.shop-kain    { background-color: #0a2a5c; border-color: #0f3a8b; box-shadow: inset 0 0 0 2px #2a6ed4; }
+.tile-shop.shop-pangan  { background-color: #0a5c1a; border-color: #0f8b2a; box-shadow: inset 0 0 0 2px #2ad450; }
+.tile-shop.shop-minyak  { background-color: #5c550a; border-color: #8b7e0f; box-shadow: inset 0 0 0 2px #d4c42a; }
+.tile-shop.shop-ikan    { background-color: #0a3d5c; border-color: #0f5f8b; box-shadow: inset 0 0 0 2px #2aaed4; }
+.tile-shop.shop-madu    { background-color: #5c3d0a; border-color: #8b5e0f; box-shadow: inset 0 0 0 2px #d4932a; }
+.tile-shop.shop-kopi    { background-color: #3d1a08; border-color: #6b2e10; box-shadow: inset 0 0 0 2px #a0512a; }
+.tile-shop.shop-bambu   { background-color: #1a4a0a; border-color: #2a7010; box-shadow: inset 0 0 0 2px #4aaa2a; }
+.tile-shop.shop-herbal  { background-color: #0a4a2a; border-color: #0f7040; box-shadow: inset 0 0 0 2px #2ad48a; }
+.tile-shop.shop-tenun   { background-color: #4a0a4a; border-color: #700f70; box-shadow: inset 0 0 0 2px #c42ac4; }
+.tile-shop.shop-sutera  { background-color: #5c0a3d; border-color: #8b0f5e; box-shadow: inset 0 0 0 2px #d42aaa; }
+.tile-shop.shop-beras   { background-color: #4a3a0a; border-color: #705810; box-shadow: inset 0 0 0 2px #d4a82a; }
+.tile-shop.shop-emas    { background-color: #4a3800; border-color: #705500; box-shadow: inset 0 0 0 2px #ffd700; }
+.tile-shop.shop-kerajinan { background-color: #3a0a4a; border-color: #5a1070; box-shadow: inset 0 0 0 2px #aa2ad4; }
+
+.tile-shop.shop-rempah:hover   { background-color: #7a3a12; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(212,98,42,0.6); }
+.tile-shop.shop-kain:hover     { background-color: #1a3a7a; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(42,110,212,0.6); }
+.tile-shop.shop-pangan:hover   { background-color: #1a7a2a; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(42,212,80,0.6); }
+.tile-shop.shop-madu:hover     { background-color: #7a6a1a; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(212,196,42,0.6); }
+.tile-shop.shop-ikan:hover     { background-color: #1a5a7a; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(42,174,212,0.6); }
+.tile-shop.shop-kopi:hover     { background-color: #5a2a10; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(160,81,42,0.6); }
+.tile-shop.shop-sutera:hover   { background-color: #7a1a5a; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(212,42,170,0.6); }
+.tile-shop.shop-emas:hover     { background-color: #6a5000; box-shadow: inset 0 0 0 2px #ffd700, 0 0 16px rgba(255,215,0,0.7); }
+.tile-shop.shop-kerajinan:hover { background-color: #5a1a6a; box-shadow: inset 0 0 0 2px #f5c842, 0 0 12px rgba(170,42,212,0.6); }
+
+/* Label warna sesuai toko */
+.tile-shop.shop-rempah  .tile-label { border-color: #d4622a; color: #d4622a; }
+.tile-shop.shop-kain    .tile-label { border-color: #2a6ed4; color: #2a6ed4; }
+.tile-shop.shop-pangan  .tile-label { border-color: #2ad450; color: #2ad450; }
+.tile-shop.shop-madu    .tile-label { border-color: #d4932a; color: #d4932a; }
+.tile-shop.shop-ikan    .tile-label { border-color: #2aaed4; color: #2aaed4; }
+.tile-shop.shop-kopi    .tile-label { border-color: #a0512a; color: #a0512a; }
+.tile-shop.shop-sutera  .tile-label { border-color: #d42aaa; color: #d42aaa; }
+.tile-shop.shop-emas    .tile-label { border-color: #ffd700; color: #ffd700; }
+.tile-shop.shop-kerajinan .tile-label { border-color: #aa2ad4; color: #aa2ad4; }
+.tile-shop.shop-tenun   .tile-label { border-color: #c42ac4; color: #c42ac4; }
+.tile-shop.shop-bambu   .tile-label { border-color: #4aaa2a; color: #4aaa2a; }
+.tile-shop.shop-herbal  .tile-label { border-color: #2ad48a; color: #2ad48a; }
+.tile-shop.shop-beras   .tile-label { border-color: #d4a82a; color: #d4a82a; }
+.tile-shop.shop-minyak  .tile-label { border-color: #d4c42a; color: #d4c42a; }
+
+/* ========== PARTIKEL EFEK BELI ========== */
+.particle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 999;
+  font-size: 14px;
+  font-weight: bold;
+  animation: particleFly 1.2s ease-out forwards;
+  font-family: 'Press Start 2P', monospace;
+}
+
+@keyframes particleFly {
+  0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0.5); }
+}
+
+.particle-coin {
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255,215,0,0.8);
+  font-size: 18px;
+}
+
+.particle-star {
+  color: #fff;
+  text-shadow: 0 0 6px rgba(255,255,255,0.8);
+  font-size: 12px;
+}
+
+.particle-profit {
+  color: #00ff88;
+  text-shadow: 0 0 8px rgba(0,255,136,0.8);
+  font-size: 10px;
+}
+
+/* ========== GLOW SAAT DEKAT TOKO ========== */
+.tile-shop.active-shop.in-range-shop {
+  animation: shopNearGlow 0.5s ease-in-out infinite !important;
+}
+
+@keyframes shopNearGlow {
+  0%, 100% { filter: brightness(1.2); }
+  50%       { filter: brightness(1.8); }
+}
+
+/* ========== FLOATING NAMA TOKO BESAR ========== */
+.tile-label {
+  font-size: 7px !important;
+  padding: 4px 8px !important;
+  letter-spacing: 0.1em !important;
+}
+
+/* ========== EFEK RIPPLE SAAT MASUK TOKO ========== */
+.shop-enter-ripple {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid #f5c842;
+  pointer-events: none;
+  animation: rippleExpand 0.6s ease-out forwards;
+  z-index: 500;
+}
+
+@keyframes rippleExpand {
+  0%   { transform: scale(0); opacity: 1; }
+  100% { transform: scale(4); opacity: 0; }
+}

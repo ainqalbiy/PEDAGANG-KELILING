@@ -374,6 +374,33 @@ function showPickupEffect(x, y, text, cls = '') {
   el.style.top  = y + 'px';
   mapContainer.appendChild(el);
   setTimeout(() => el.remove(), 1000);
+
+  // Tambah partikel koin & bintang
+  const particles = ['💰','⭐','✨','💫','🪙'];
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('div');
+    const angle = (Math.PI * 2 * i) / 6;
+    const dist  = 30 + Math.random() * 40;
+    const px = Math.cos(angle) * dist;
+    const py = Math.sin(angle) * dist - 20;
+    p.className = 'particle particle-coin';
+    p.textContent = particles[Math.floor(Math.random() * particles.length)];
+    p.style.left = (x + 16) + 'px';
+    p.style.top  = (y + 16) + 'px';
+    p.style.setProperty('--px', px + 'px');
+    p.style.setProperty('--py', py + 'px');
+    p.style.animationDelay = (i * 0.05) + 's';
+    mapContainer.appendChild(p);
+    setTimeout(() => p.remove(), 1400);
+  }
+
+  // Ripple di posisi player
+  const ripple = document.createElement('div');
+  ripple.className = 'shop-enter-ripple';
+  ripple.style.left = (x + 8) + 'px';
+  ripple.style.top  = (y + 8) + 'px';
+  mapContainer.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 700);
 }
 
 // ========== ITEM TAKEN TRACKING ========== //

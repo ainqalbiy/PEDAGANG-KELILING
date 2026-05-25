@@ -272,6 +272,18 @@ function renderMap(mapIndex) {
         }
         el.id = `shop-tile-${tCode}-${c}-${r}`;
         el.classList.add('active-shop');
+        // Tambah class warna berdasarkan label toko
+        if (shop) {
+          const shopColorMap = {
+            'REMPAH': 'shop-rempah', 'KAIN': 'shop-kain', 'PANGAN': 'shop-pangan',
+            'MINYAK': 'shop-minyak', 'IKAN': 'shop-ikan', 'MADU': 'shop-madu',
+            'KOPI': 'shop-kopi', 'BAMBU': 'shop-bambu', 'HERBAL': 'shop-herbal',
+            'TENUN': 'shop-tenun', 'SUTERA': 'shop-sutera', 'BERAS': 'shop-beras',
+            'EMAS': 'shop-emas', 'KERAJINAN': 'shop-kerajinan',
+          };
+          const colorClass = shopColorMap[shop.label];
+          if (colorClass) el.classList.add(colorClass);
+        }
       }
 
       container.appendChild(el);
