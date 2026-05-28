@@ -112,21 +112,6 @@ function initGameButtons() {
   document.getElementById('btn-close-dp').addEventListener('click', closeDPPanel);
 }
 
-// ========== HANDLE HASIL MUNCUL ========== //
-// Dipanggil dari btn-lihat-hasil di popup.js
-document.addEventListener('DOMContentLoaded', () => {
-  const btnLihatHasil = document.getElementById('btn-lihat-hasil');
-  if (btnLihatHasil) {
-    // Override listener dari popup.js
-    btnLihatHasil.onclick = () => {
-      closePopup('popup-kalkulasi');
-      if (window.pendingHasilData) {
-        showHasil(window.pendingHasilData);
-      }
-    };
-  }
-});
-
 // ========== ENTRY POINT ========== //
 document.addEventListener('DOMContentLoaded', async () => {
   // Init tombol game
