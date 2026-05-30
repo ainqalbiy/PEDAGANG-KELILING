@@ -1,125 +1,192 @@
-// ========== STATE GLOBAL ========== //
-window.gameState = {
-  sessionId:        null,
-  round:            0,
-  totalRounds:      5,
-  items:            [],
-  selectedIds:      [],
-  budget:           0,
-  playerName:       'PEDAGANG',
-  totalPlayerScore: 0,
-  totalDPScore:     0,
-  gameHistory:      [],
-};
+// ══════════════════════════════════════
+//   MAIN — entry point
+// ══════════════════════════════════════
 
-// ========== LOADING SCREEN ========== //
-async function runLoadingScreen() {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // ── Init Canvas ──
+  initCanvas();
+  initInput();
+
+  // ── Pixel cursor track ──
+  document.addEventListener('mousemove', e => {
+    document.documentElement.style.setProperty('--cx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--cy', e.clientY + 'px');
+  });
+
+  // ── Title screen sprite ──
+  document.getElementById('title-sprite').textContent = '🧑‍🌾';
+
+  // ── Loading sequence ──
+  await runLoading();
+
+  // ── Show title ──
+  showScreen('screen-title');
+});
+
+// ══════════════════════════════════════
+//   LOADING SEQUENCE
+// ══════════════════════════════════════
+async function runLoading() {
+  // Buat loading screen sementara
+  const loadEl = document.createElement('div');
+  loadEl.style.cssText = `
+    position: fixed; inset: 0;
+    background: #101018;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; z-index: 9999;
+    font-family: 'Press Start 2P', monospace;
+  `;
+
+  const logo = document.createElement('div');
+  logo.style.cssText = `font-size: 20px; color: #f8d030;
+    text-shadow: 4px 4px 0 #8a6000; text-align: center; line-height: 1.8;`;
+  logo.innerHTML = 'PEDAGANG<br>KELILING';
+
+  const barWrap = document.createElement('div');
+  barWrap.style.cssText = `
+    width: 280px; height: 14px;
+    background: #1a1a28; border: 2px solid #383848;
+  `;
+
+  const bar = document.createElement('div');
+  bar.style.cssText = `
+    height: 100%; width: 0%; background: #f8d030;
+    transition: width 0.3s ease;
+  `;
+
+  const tip = document.createElement('div');
+  tip.style.cssText = `font-size: 8px; color: #606080; letter-spacing: 0.08em;`;
+  tip.textContent   = 'Memuat aset game...';
+
+  barWrap.appendChild(bar);
+  loadEl.appendChild(logo);
+  loadEl.appendChild(barWrap);
+  loadEl.appendChild(tip);
+  document.body.appendChild(loadEl);
+
   const tips = [
     'Memuat peta pasar...',
     'Menyiapkan algoritma DP...',
-    'Menghitung kombinasi optimal...',
-    'Melatih AI Greedy rival...',
+    'Melatih AI rival...',
+    'Menghitung kombinasi...',
     'Siap berdagang!',
   ];
 
-  const tipEl = document.getElementById('loading-tip');
-  const bar   = document.getElementById('loading-bar');
+  // Animasi loading bar
+  for (let i = 0; i <= 100; i += 20) {
+    bar.style.width = i + '%';
+    tip.textContent = tips[Math.floor(i / 20)] || tips[tips.length - 1];
+    await sleep(220);
+  }
 
-  // Animasi tips
-  let i = 0;
-  const tipInterval = setInterval(() => {
-    tipEl.textContent = tips[i % tips.length];
-    i++;
-  }, 500);
-
-  // Tunggu loading bar selesai (2.5 detik dari CSS)
-  await new Promise(resolve => setTimeout(resolve, 2800));
-  clearInterval(tipInterval);
-
-  // Sembunyikan loading, tampilkan title
-  document.getElementById('loading-screen').style.display = 'none';
-  document.getElementById('title-screen').style.display   = 'flex';
-  setPhase(GamePhase.TITLE);
+  await sleep(300);
+  loadEl.style.transition = 'opacity 0.4s';
+  loadEl.style.opacity    = '0';
+  await sleep(400);
+  loadEl.remove();
 }
 
-// ========== TITLE SCREEN ========== //
-function initTitleScreen() {
-  // Tombol menu
-  document.getElementById('btn-new-game').addEventListener('click', startNewGame);
-  document.getElementById('btn-how-to-play').addEventListener('click', () => {
-    openPopup('popup-tutorial');
-  });
-  document.getElementById('btn-title-leaderboard').addEventListener('click', () => {
-    showLeaderboard();
-  });
+// ══════════════════════════════════════
+//   INJECT CSS TAMBAHAN
+//   (yang tidak ada di file CSS utama)
+// ══════════════════════════════════════
+(function injectExtraCSS() {
+  const style = document.createElement('style');
+  style.textContent = `
 
-  // Enter key
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && currentPhase === GamePhase.TITLE) {
-      startNewGame();
+    /* ── DP Panel bars update ── */
+    #dp-bars .dp-bar-row { margin-bottom: 7px; }
+
+    /* ── DP panel di game screen ── */
+    #dp-panel {
+      position: fixed;
+      bottom: 32px; left: 0; right: 0;
     }
-  });
-}
 
-// ========== MULAI GAME BARU ========== //
-function startNewGame() {
-  document.getElementById('title-screen').style.display = 'none';
-  document.getElementById('game-screen').style.display  = 'flex';
-  setPhase(GamePhase.NAMA);
-  openPopup('popup-nama');
+    /* ── dp-detail-view hidden ── */
+    #dp-detail-view { display: none; }
+    #dp-detail-view:not(.hidden) { display: block; }
 
-  // Focus input nama
-  setTimeout(() => {
-    document.getElementById('input-nama-player').focus();
-  }, 300);
-}
+    /* ── Kalk table cell fill animation ── */
+    @keyframes cellFill {
+      from { background: rgba(248,208,48,0.5); }
+      to   { background: rgba(248,208,48,0.12); }
+    }
+    .filling { animation: cellFill 0.35s ease forwards; }
 
-// ========== KONFIRMASI NAMA ========== //
-function handleConfirmNama() {
-  const input = document.getElementById('input-nama-player');
-  const name  = input.value.trim() || 'PEDAGANG';
+    /* ── Trace step animation ── */
+    .trace-step {
+      animation: fadeInUp 0.25s ease forwards;
+      opacity: 0;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-  window.gameState.playerName = name.toUpperCase().slice(0, 10);
-  closePopup('popup-nama');
+    /* ── Dialog box bawah layar tidak overlap game ── */
+    #screen-game #dialog-box {
+      bottom: 32px;
+    }
 
-  // Mulai ronde pertama
-  initInput();
-  initRound(0);
-}
+    /* ── HUD bottom height ── */
+    #hud-bottom { height: 32px; }
 
-// ========== TOMBOL SELL ========== //
-function initGameButtons() {
-  // Tombol jual
-  document.getElementById('btn-sell').addEventListener('click', handleSell);
+    /* ── Popup shop dynamic ── */
+    #popup-shop-dynamic .popup-box {
+      max-width: 680px;
+    }
 
-  // Tombol next day dari popup hasil
-  document.getElementById('btn-next-day').addEventListener('click', handleNextRound);
+    /* ── Analysis item fill animation ── */
+    .analysis-item.show {
+      opacity: 1 !important;
+      transform: translateX(0) !important;
+    }
 
-  // Tombol finish journey
-  document.getElementById('btn-finish-journey').addEventListener('click', handleFinishGame);
+    /* ── Kalk announce ── */
+    #kalk-announce {
+      border-left: 3px solid var(--cyan);
+      padding-left: 10px;
+    }
 
-  // Tombol konfirmasi nama
-  document.getElementById('btn-confirm-nama').addEventListener('click', handleConfirmNama);
+    /* ── Countdown size tweak ── */
+    #countdown-num { font-size: 80px; }
 
-  // Enter di input nama
-  document.getElementById('input-nama-player').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleConfirmNama();
-  });
+    /* ── Screen title background stars anim ── */
+    @keyframes starFloat {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(-8px); }
+    }
 
-  // Tombol lihat hasil dari kalkulasi — sudah di popup.js
-  // Tombol show DP
-  document.getElementById('btn-show-dp').addEventListener('click', toggleDPPanel);
-  document.getElementById('btn-close-dp').addEventListener('click', closeDPPanel);
-}
+    /* ── Pixel cursor hide native ── */
+    * { cursor: none !important; }
 
-// ========== ENTRY POINT ========== //
-document.addEventListener('DOMContentLoaded', async () => {
-  // Init tombol game
-  initGameButtons();
+    /* ── Toast animation ── */
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.9); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+    .toast { animation: toastIn 0.22s ease; }
 
-  // Mulai loading screen
-  await runLoadingScreen();
+    /* ── DP panel dp-bars realtime ── */
+    .dp-bar-fill.opt    { background: #f8d030; }
+    .dp-bar-fill.player { background: #48d858; }
+    .dp-bar-fill.both   { background: #48d858; }
+    .dp-bar-fill.none   { background: #383848; }
 
-  // Init title screen
-  initTitleScreen();
-});
+    /* ── Kalk step text code ── */
+    .kalk-step-text code {
+      color: #f8d030; font-family: 'Press Start 2P', monospace;
+      font-size: 8px; background: #0a0a12;
+      padding: 1px 4px;
+    }
+
+    /* ── dp-visualizer bars id fix ── */
+    #dp-bar-opt    { background: #f8d030 !important; }
+    #dp-bar-player { background: #48d858 !important; }
+    #dp-bar-ai     { background: #f03030 !important; }
+  `;
+  document.head.appendChild(style);
+})();

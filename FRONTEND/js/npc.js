@@ -1,261 +1,164 @@
-// ========== STATE TOKO ========== //
-let activeShop     = null;
-let globalShopItems = {};
-let twTimer        = null; // typewriter timer
+// ══════════════════════════════════════
+//   NPC & SHOP SYSTEM
+// ══════════════════════════════════════
 
-// ========== TYPEWRITER EFFECT ========== //
-function typewriter(el, text, speed = 28, onDone = null) {
-  clearTimeout(twTimer);
-  el.innerHTML = '';
-  let i = 0;
+let activeShop = null;
 
-  function next() {
-    if (i >= text.length) {
-      // Tambah cursor berkedip di akhir
-      el.innerHTML = text + '<span class="tw-cursor"></span>';
-      if (onDone) onDone();
-      return;
-    }
-    el.textContent = text.slice(0, i + 1);
-    SFX.tick();
-    i++;
-    twTimer = setTimeout(next, speed);
-  }
-
-  next();
-}
-
-// ========== DISTRIBUSI ITEM KE TOKO ========== //
-function distributeItemsToShops(allItems, mapData) {
+// ══════════════════════════════════════
+//   DISTRIBUSI ITEM KE TOKO
+// ══════════════════════════════════════
+function initShopItems(allItems, mapDef) {
   const shuffled = [...allItems].sort(() => Math.random() - 0.5);
-  const result   = {};
-  let idx = 0;
+  window.shopItemsMap = {};
+  window.takenItems   = {};
 
-  mapData.shops.forEach(shop => {
-    result[shop.id] = [];
+  let idx = 0;
+  mapDef.shops.forEach(shop => {
+    window.shopItemsMap[shop.id] = [];
     const count = shop.itemCount || 2;
     for (let i = 0; i < count && idx < shuffled.length; i++) {
-      result[shop.id].push(shuffled[idx++]);
+      window.shopItemsMap[shop.id].push(shuffled[idx++]);
     }
-  });
-
-  return result;
-}
-
-function initShopItems(allItems, mapData) {
-  globalShopItems = distributeItemsToShops(allItems, mapData);
-
-  // Spawn partikel uang dari toko yang punya item
-  mapData.shops.forEach(shop => {
-    scheduleShopParticles(shop);
   });
 }
 
 function getShopItems(shop) {
-  return globalShopItems[shop.id] || [];
+  return window.shopItemsMap?.[shop.id] || [];
 }
 
-// ========== PARTIKEL UANG DI TOKO ========== //
-function scheduleShopParticles(shop) {
-  const el = document.getElementById(`npc-indicator-${shop.id}`);
-  if (!el) return;
-
-  setInterval(() => {
-    if (Math.random() > 0.4) return; // tidak selalu muncul
-    spawnShopParticle(el);
-  }, 1800 + Math.random() * 1200);
-}
-
-function spawnShopParticle(anchorEl) {
-  const rect   = anchorEl.getBoundingClientRect();
-  const map    = document.getElementById('map-container').getBoundingClientRect();
-  const particles = ['💰', '✨', '⭐', '🪙'];
-
-  const p = document.createElement('div');
-  p.className   = 'shop-particle';
-  p.textContent = particles[Math.floor(Math.random() * particles.length)];
-  p.style.left  = (rect.left - map.left + Math.random() * 20 - 10) + 'px';
-  p.style.top   = (rect.top  - map.top) + 'px';
-
-  document.getElementById('map-container').appendChild(p);
-  setTimeout(() => p.remove(), 2000);
-}
-
-// ========== TANDA SERU DI TOKO ========== //
-function showShopExclaim(shopId) {
-  const tileEl = document.querySelector(`[id^="shop-tile-"][id*="${shopId}"]`);
-  if (!tileEl) return;
-
-  const existing = tileEl.querySelector('.shop-exclaim');
-  if (existing) return;
-
-  const ex = document.createElement('div');
-  ex.className   = 'shop-exclaim';
-  ex.textContent = '!';
-  tileEl.appendChild(ex);
-}
-
-function hideShopExclaim(shopId) {
-  document.querySelectorAll('.shop-exclaim').forEach(el => el.remove());
-}
-
-// ========== BUKA TOKO ========== //
+// ══════════════════════════════════════
+//   BUKA TOKO
+// ══════════════════════════════════════
 function openShop(shop) {
   activeShop = shop;
-  SFX.confirm();
+  setInputEnabled(false);
 
-  // Header NPC
-  document.getElementById('shop-npc-avatar').textContent = shop.npcAvatar;
-  document.getElementById('shop-npc-name').textContent   = shop.npcName.toUpperCase();
-  document.getElementById('shop-npc-sub').textContent    = shop.npcSub;
-
-  // Dialog NPC — typewriter
-  const dialogs = [
-    `Selamat datang di toko ${shop.label}! Pilih yang terbaik!`,
-    `Ada barang bagus hari ini! Jangan lewatkan!`,
-    `Pedagang hebat selalu pilih dengan cermat.`,
-    `Modal terbatas? Gunakan strategi yang tepat!`,
-    `Perhatikan rasio profit/modal sebelum memilih!`,
-  ];
-
-  const dialogEl = document.getElementById('npc-dialog-text');
-  const msg      = dialogs[Math.floor(Math.random() * dialogs.length)];
-  typewriter(dialogEl, `"${msg}"`, 24);
-
-  // Render item
-  renderShopItems(shop);
-  updateShopDPHint();
-
-  // Tandai toko sudah dikunjungi
-  markShopVisited(shop.id);
-
-  openPopup('popup-shop');
-}
-
-// ========== TANDAI TOKO DIKUNJUNGI ========== //
-function markShopVisited(shopId) {
-  document.querySelectorAll('.tile-shop').forEach(tile => {
-    const code = tile.dataset.code;
-    if (!code) return;
-    const idx   = parseInt(code[1]) - 1;
-    const shops = window.currentMapData?.shops;
-    if (shops && shops[idx]?.id === shopId) {
-      tile.classList.add('visited');
-    }
+  // Sapa dengan dialog dulu
+  Dialog.npcGreet(shop, () => {
+    // Setelah dialog, buka UI toko
+    showShopUI(shop);
   });
-  hideShopExclaim(shopId);
 }
 
-// ========== RENDER ITEM DI TOKO ========== //
-function renderShopItems(shop) {
-  const container = document.getElementById('shop-items');
-  const state     = window.gameState;
-  const items     = getShopItems(shop);
-  const budget    = state.budget;
-  const selected  = state.selectedIds;
+// ══════════════════════════════════════
+//   SHOW SHOP UI — popup tengah layar
+// ══════════════════════════════════════
+function showShopUI(shop) {
+  // Buat popup toko dinamis
+  let popup = document.getElementById('popup-shop-dynamic');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id        = 'popup-shop-dynamic';
+    popup.className = 'popup-overlay';
+    document.body.appendChild(popup);
+  }
 
-  const spent = selected.reduce((s, id) => {
+  const state    = window.gameState;
+  const items    = getShopItems(shop);
+  const dpResult = clientKnapsack(state.items, state.budget);
+
+  popup.innerHTML = buildShopHTML(shop, items, state, dpResult);
+  popup.classList.add('show');
+
+  // Event listener tombol
+  popup.querySelectorAll('.shop-item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const itemId = parseInt(btn.dataset.id);
+      handleShopBuy(itemId, shop, popup);
+    });
+  });
+
+  document.getElementById('btn-close-shop')?.addEventListener('click', () => {
+    closeShop(popup);
+  });
+}
+
+// ══════════════════════════════════════
+//   BUILD SHOP HTML
+// ══════════════════════════════════════
+function buildShopHTML(shop, items, state, dpResult) {
+  const spent = state.selectedIds.reduce((s, id) => {
     const it = state.items.find(i => i.id === id);
     return s + (it ? it.cost : 0);
   }, 0);
-  const remaining = budget - spent;
+  const remaining = state.budget - spent;
+  const c = SHOP_COLORS[shop.colorIdx % SHOP_COLORS.length];
 
-  const dpResult = clientKnapsack(state.items, budget);
+  const itemsHTML = items.map(item => {
+    const isSel     = state.selectedIds.includes(item.id);
+    const isTaken   = window.takenItems?.[item.id] && !isSel;
+    const canAfford = item.cost <= remaining || isSel;
+    const isOpt     = dpResult.chosenIds.includes(item.id);
+    const ratio     = (item.profit / item.cost).toFixed(2);
+    const rClass    = ratio >= 1.8 ? 'high' : ratio >= 1.3 ? 'med' : 'low';
 
-  container.innerHTML = items.map(item => {
-    const isSel      = selected.includes(item.id);
-    const isTaken    = isItemTaken(item.id) && !isSel;
-    const canAfford  = item.cost <= remaining || isSel;
-    const isOptimal  = dpResult.chosenIds.includes(item.id);
-    const ratio      = (item.profit / item.cost).toFixed(2);
-    const ratioClass = ratio >= 1.8 ? 'high' : ratio >= 1.3 ? 'med' : 'low';
-
-    let cls = 'shop-item';
-    if (isSel)    cls += ' selected';
-    if (isTaken)  cls += ' unavailable';
-    else if (!canAfford && !isSel) cls += ' unavailable';
-    if (isOptimal && !isTaken) cls += ' dp-optimal';
+    let borderColor = c.roof;
+    if (isSel)  borderColor = '#48d858';
+    if (isTaken) borderColor = '#404050';
 
     return `
-      <div class="${cls}" data-id="${item.id}" onclick="handleShopItemClick(${item.id})">
-        <div class="shop-item-check">✓</div>
-        <span class="shop-emoji">${item.emoji}</span>
-        <div class="shop-name">${item.name}</div>
-        <div class="shop-row">
+      <div class="shop-item-card ${isSel ? 'selected' : ''} ${isTaken ? 'taken' : ''}"
+           style="border-color:${borderColor}">
+        <div class="shop-item-top">
+          <span class="shop-item-emoji">${item.emoji}</span>
+          ${isOpt && !isTaken ? `<span class="dp-opt-badge">✦DP</span>` : ''}
+          ${isTaken ? `<span class="taken-badge">✕HABIS</span>` : ''}
+          ${isSel   ? `<span class="sel-badge">✓</span>` : ''}
+        </div>
+        <div class="shop-item-name">${item.name}</div>
+        <div class="shop-item-stats">
           <span class="shop-cost">Rp ${item.cost}</span>
           <span class="shop-profit">+${item.profit}</span>
         </div>
-        <div class="shop-ratio ${ratioClass}">
-          Rasio: ${ratio}x ${ratioClass === 'high' ? '⭐' : ''}
-        </div>
-        ${isOptimal && !isTaken
-          ? `<div class="shop-dp-badge">✦ DP OPTIMAL</div>`
-          : ''}
-        ${isTaken
-          ? `<div class="shop-dp-badge" style="color:var(--red2);border-color:var(--red)">✕ DIAMBIL</div>`
-          : ''}
+        <div class="shop-ratio ${rClass}">Rasio: ${ratio}x ${rClass === 'high' ? '⭐' : ''}</div>
+        <button class="shop-item-btn poke-btn ${isSel ? 'red' : 'green'}"
+                data-id="${item.id}"
+                ${(isTaken || (!canAfford && !isSel)) ? 'disabled' : ''}>
+          ${isTaken ? 'HABIS' : isSel ? '✕ BATAL' : '▶ BELI'}
+        </button>
       </div>
     `;
   }).join('');
+
+  const dpHint = buildDPHint(state, dpResult);
+
+  return `
+    <div class="popup-box popup-shop-box" style="
+      border-color: ${c.roof};
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.6),
+                  0 0 30px ${c.roof}40;
+    ">
+      <div class="popup-header" style="border-color:${c.roof}">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:28px">${shop.npcEmoji}</span>
+          <div>
+            <div class="popup-title" style="color:${c.roof}">${shop.npcName}</div>
+            <div style="font-size:8px;color:var(--muted);margin-top:2px">${shop.npcSub} — ${shop.label}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:8px;color:var(--muted)">MODAL TERSISA</div>
+          <div style="font-size:14px;color:var(--gold)">Rp ${remaining}</div>
+        </div>
+      </div>
+
+      <div class="popup-body">
+        <div class="shop-items-grid">${itemsHTML}</div>
+        <div class="shop-dp-hint">${dpHint}</div>
+      </div>
+
+      <div class="popup-footer">
+        <button class="poke-btn secondary" id="btn-close-shop">✕ TUTUP TOKO</button>
+        <button class="poke-btn" id="btn-done-shop">✓ SELESAI BELANJA</button>
+      </div>
+    </div>
+  `;
 }
 
-// ========== HANDLE KLIK ITEM ========== //
-function handleShopItemClick(itemId) {
-  const state = window.gameState;
-  const item  = state.items.find(i => i.id === itemId);
-  if (!item) return;
-
-  if (isItemTaken(itemId) && !state.selectedIds.includes(itemId)) {
-    showToast('Item sudah diambil!', 'red');
-    SFX.cancel();
-    return;
-  }
-
-  const isSel = state.selectedIds.includes(itemId);
-
-  if (isSel) {
-    state.selectedIds = state.selectedIds.filter(id => id !== itemId);
-    markItemTaken(itemId, null);
-    SFX.cancel();
-  } else {
-    const spent = state.selectedIds.reduce((s, id) => {
-      const it = state.items.find(i => i.id === id);
-      return s + (it ? it.cost : 0);
-    }, 0);
-
-    if (spent + item.cost > state.budget) {
-      showToast('Modal tidak cukup!', 'red');
-      SFX.cancel();
-      return;
-    }
-
-    state.selectedIds.push(itemId);
-    markItemTaken(itemId, 'player');
-    SFX.buy();
-
-    // Efek pickup
-    showPickupEffect(playerState.x, playerState.y, `+${item.profit}`, 'player-pick');
-
-    // NPC komentar dari server — typewriter
-    apiGetNPCComment(itemId).then(result => {
-      if (result.success) {
-        const dialogEl = document.getElementById('npc-dialog-text');
-        typewriter(dialogEl, `"${result.data.comment}"`, 22);
-      }
-    });
-  }
-
-  renderShopItems(activeShop);
-  updateShopDPHint();
-  updateAllUI();
-}
-
-// ========== UPDATE DP HINT DI TOKO ========== //
-function updateShopDPHint() {
-  const state    = window.gameState;
-  const dpResult = clientKnapsack(state.items, state.budget);
-  const hint     = document.getElementById('shop-dp-hint');
-
+// ══════════════════════════════════════
+//   BUILD DP HINT
+// ══════════════════════════════════════
+function buildDPHint(state, dpResult) {
   const playerProfit = state.selectedIds.reduce((s, id) => {
     const it = state.items.find(i => i.id === id);
     return s + (it ? it.profit : 0);
@@ -266,99 +169,143 @@ function updateShopDPHint() {
     ? ((playerProfit / dpResult.maxProfit) * 100).toFixed(1) : 100;
 
   if (state.selectedIds.length === 0) {
-    hint.innerHTML = `💡 <strong>Tips DP:</strong> Item dengan badge
-      <span style="color:var(--gold)">✦ DP OPTIMAL</span>
-      adalah pilihan terbaik algoritma untuk budget Rp ${state.budget}.
-      Perhatikan <strong>rasio profit/modal</strong> tiap item!`;
-    return;
+    return `💡 Item dengan badge <span style="color:var(--gold)">✦DP</span> adalah pilihan optimal Knapsack untuk budget Rp ${state.budget}.`;
   }
 
   if (diff === 0) {
-    hint.innerHTML = `✅ <span style="color:var(--green)">
-      Pilihanmu sudah optimal!</span>
-      Efisiensi 100% — sama dengan
-      <code style="color:var(--gold)">dp[${state.items.length}][${state.budget}] = ${dpResult.maxProfit}</code>`;
-    return;
+    return `✅ <span style="color:var(--green)">OPTIMAL!</span> Pilihanmu = dp[${state.items.length}][${state.budget}] = <strong>${dpResult.maxProfit}</strong>`;
   }
 
-  hint.innerHTML = `📊 Efisiensi: <strong style="color:var(--gold)">${eff}%</strong>
-    — <code style="color:var(--gold)">dp[n][W] = ${dpResult.maxProfit}</code>,
-    pilihanmu = <span style="color:var(--green)">${playerProfit}</span>,
-    selisih = <span style="color:var(--red)">-${diff}</span>
-    <br><span style="color:var(--text3); font-size:12px">
-    dp[i][w] = max(dp[i-1][w], dp[i-1][w-cost]+profit)</span>`;
+  return `📊 Efisiensi: <span style="color:var(--gold)">${eff}%</span> — dp[n][W] = <strong style="color:var(--gold)">${dpResult.maxProfit}</strong>, kamu = <span style="color:var(--green)">${playerProfit}</span>, selisih = <span style="color:var(--red)">-${diff}</span><br>
+    <span style="color:var(--muted);font-size:8px">dp[i][w] = max(dp[i-1][w], dp[i-1][w-cost]+profit)</span>`;
 }
 
-// ========== SELESAI BELANJA ========== //
-function handleDoneShopping() {
-  closePopup('popup-shop');
-  SFX.confirm();
-  activeShop = null;
-  updateAllUI();
-}
-
-// ========== UPDATE SEMUA UI ========== //
-function updateAllUI() {
+// ══════════════════════════════════════
+//   HANDLE BUY ITEM
+// ══════════════════════════════════════
+function handleShopBuy(itemId, shop, popup) {
   const state = window.gameState;
-  renderInventory(state.selectedIds, state.items);
+  const item  = state.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  const isSel = state.selectedIds.includes(itemId);
+
+  if (isSel) {
+    // Deselect
+    state.selectedIds = state.selectedIds.filter(id => id !== itemId);
+    if (window.takenItems?.[itemId] === 'player') {
+      delete window.takenItems[itemId];
+    }
+    SFX.cancel();
+    spawnFloatText(`-${item.name}`, 'negative');
+  } else {
+    // Cek sudah diambil AI
+    if (window.takenItems?.[itemId] === 'ai') {
+      showToast('Item sudah diambil AI!', 'red');
+      SFX.cancel();
+      return;
+    }
+
+    // Cek budget
+    const spent = state.selectedIds.reduce((s, id) => {
+      const it = state.items.find(i => i.id === id);
+      return s + (it ? it.cost : 0);
+    }, 0);
+
+    if (spent + item.cost > state.budget) {
+      showToast('Modal tidak cukup!', 'red');
+      screenFlash('#ff0000', 150);
+      SFX.cancel();
+      return;
+    }
+
+    // Beli
+    state.selectedIds.push(itemId);
+    if (!window.takenItems) window.takenItems = {};
+    window.takenItems[itemId] = 'player';
+
+    SFX.buy();
+    screenFlash('#48d858', 100);
+    spawnEffect(playerState.wx, playerState.wy, `+${item.profit}`, '#48d858');
+    spawnFloatText(`+${item.profit}`, 'positive');
+
+    // NPC comment dari server
+    apiGetNPCComment(itemId).then(result => {
+      if (result.success) {
+        Dialog.npcAfterBuy(item, result.data.comment, null);
+      }
+    });
+  }
+
+  // Re-render shop
+  const dpResult = clientKnapsack(state.items, state.budget);
+  popup.querySelector('.popup-box').outerHTML; // force update
+  const newHTML = buildShopHTML(shop, getShopItems(shop), state, dpResult);
+  popup.innerHTML = newHTML;
+
+  // Re-attach listeners
+  popup.querySelectorAll('.shop-item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      handleShopBuy(parseInt(btn.dataset.id), shop, popup);
+    });
+  });
+
+  document.getElementById('btn-close-shop')?.addEventListener('click', () => closeShop(popup));
+  document.getElementById('btn-done-shop')?.addEventListener('click',  () => closeShop(popup));
+
+  // Update HUD
+  updateHUD();
   updateDPLiveBars();
-  updateHUDBudget();
-  document.getElementById('btn-sell').disabled = state.selectedIds.length === 0;
 }
 
-// ========== RENDER INVENTORY ========== //
-function renderInventory(selectedIds, items) {
-  const list     = document.getElementById('inventory-list');
-  const totalEl  = document.getElementById('inventory-total');
-  const profitEl = document.getElementById('inventory-profit');
+// ══════════════════════════════════════
+//   CLOSE SHOP
+// ══════════════════════════════════════
+function closeShop(popup) {
+  popup?.classList.remove('show');
+  activeShop = null;
+  setInputEnabled(true);
+  SFX.cancel();
 
-  if (!selectedIds || selectedIds.length === 0) {
-    list.innerHTML = `<div class="inventory-empty">Belum ada barang</div>`;
-    if (totalEl) totalEl.style.display = 'none';
-    return;
+  // Tandai toko sudah dikunjungi di renderer
+  if (activeShop) {
+    renderState.visitedShops?.add(activeShop.id);
   }
 
-  let total = 0;
-  list.innerHTML = selectedIds.map(id => {
-    const item = items.find(i => i.id === id);
-    if (!item) return '';
-    total += item.profit;
-    return `
-      <div class="inventory-item">
-        <span class="inv-emoji">${item.emoji}</span>
-        <span class="inv-name">${item.name}</span>
-        <span class="inv-profit">+${item.profit}</span>
-      </div>
-    `;
-  }).join('');
-
-  if (totalEl) {
-    totalEl.style.display = 'flex';
-    profitEl.textContent  = `+Rp ${total}`;
-  }
+  updateHUD();
+  updateDPLiveBars();
 }
 
-// ========== UPDATE HUD BUDGET ========== //
-function updateHUDBudget() {
+// ══════════════════════════════════════
+//   UPDATE HUD
+// ══════════════════════════════════════
+function updateHUD() {
   const state = window.gameState;
+  if (!state) return;
+
   const spent = state.selectedIds.reduce((s, id) => {
     const it = state.items.find(i => i.id === id);
     return s + (it ? it.cost : 0);
   }, 0);
 
-  document.getElementById('hud-budget').textContent = `Rp ${state.budget - spent}`;
-
   const profit = state.selectedIds.reduce((s, id) => {
     const it = state.items.find(i => i.id === id);
     return s + (it ? it.profit : 0);
   }, 0);
-  document.getElementById('hud-score').textContent = `+${state.totalPlayerScore + profit}`;
+
+  const budgetEl = document.getElementById('hud-budget');
+  const scoreEl  = document.getElementById('hud-score');
+
+  if (budgetEl) budgetEl.textContent = `Rp ${state.budget - spent}`;
+  if (scoreEl)  scoreEl.textContent  = `+${state.totalPlayerScore + profit}`;
 }
 
-// ========== UPDATE DP LIVE BARS ========== //
+// ══════════════════════════════════════
+//   UPDATE DP LIVE BARS
+// ══════════════════════════════════════
 function updateDPLiveBars() {
   const state = window.gameState;
-  if (!state.items || state.items.length === 0) return;
+  if (!state?.items?.length) return;
 
   const dp       = clientKnapsack(state.items, state.budget);
   const dpMax    = dp.maxProfit;
@@ -369,37 +316,130 @@ function updateDPLiveBars() {
   const ai       = aiState.totalProfit;
   const maxVal   = Math.max(dpMax, player, ai, 1);
 
-  document.getElementById('dp-bar-optimal').style.width = `${(dpMax  / maxVal * 100).toFixed(1)}%`;
-  document.getElementById('dp-bar-player').style.width  = `${(player / maxVal * 100).toFixed(1)}%`;
-  document.getElementById('dp-bar-ai').style.width      = `${(ai     / maxVal * 100).toFixed(1)}%`;
+  const bars = {
+    'dp-bar-opt':    { val: dpMax,  el: 'dp-val-opt'    },
+    'dp-bar-player': { val: player, el: 'dp-val-player' },
+    'dp-bar-ai':     { val: ai,     el: 'dp-val-ai'     },
+  };
 
-  document.getElementById('dp-val-optimal').textContent = dpMax;
-  document.getElementById('dp-val-player').textContent  = player;
-  document.getElementById('dp-val-ai').textContent      = ai;
+  Object.entries(bars).forEach(([barId, data]) => {
+    const bar = document.getElementById(barId);
+    const val = document.getElementById(data.el);
+    if (bar) bar.style.width = `${(data.val / maxVal * 100).toFixed(1)}%`;
+    if (val) val.textContent = data.val;
+  });
 
   const eff    = dpMax > 0 ? ((player / dpMax) * 100).toFixed(1) : 100;
-  const effEl  = document.getElementById('dp-efficiency');
-
-  if (player === 0) {
-    effEl.textContent = 'Pilih barang untuk analisis';
-    effEl.style.color = 'var(--text3)';
-  } else if (player >= dpMax) {
-    effEl.textContent = '✅ OPTIMAL! 100%';
-    effEl.style.color = 'var(--green)';
-  } else {
-    effEl.textContent = `Efisiensi: ${eff}%`;
-    effEl.style.color = parseFloat(eff) >= 80 ? 'var(--gold)' : 'var(--text2)';
+  const effEl  = document.getElementById('dp-efficiency-txt');
+  if (effEl) {
+    effEl.textContent = player === 0
+      ? 'Pilih barang untuk analisis'
+      : player >= dpMax ? '✅ OPTIMAL! 100%'
+      : `Efisiensi: ${eff}%`;
   }
 }
 
-// ========== SHOW TOAST ========== //
-function showToast(msg, type = '') {
-  const existing = document.querySelector('.toast');
-  if (existing) existing.remove();
+// ══════════════════════════════════════
+//   CSS TOKO (inject sekali)
+// ══════════════════════════════════════
+(function injectShopCSS() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .popup-shop-box {
+      max-width: 680px;
+      background: var(--dark2);
+      border: 3px solid;
+    }
 
-  const el = document.createElement('div');
-  el.className   = `toast ${type ? 'toast-' + type : ''}`;
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2600);
-}
+    .shop-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .shop-item-card {
+      background: var(--dark3);
+      border: 2px solid var(--border);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      transition: all 0.12s;
+      position: relative;
+    }
+
+    .shop-item-card:hover:not(.taken) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .shop-item-card.selected {
+      background: rgba(72,216,88,0.08);
+    }
+
+    .shop-item-card.taken {
+      opacity: 0.35;
+    }
+
+    .shop-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .shop-item-emoji { font-size: 24px; }
+
+    .dp-opt-badge {
+      font-size: 6px; padding: 2px 4px;
+      background: rgba(248,208,48,0.15);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+
+    .taken-badge {
+      font-size: 6px; padding: 2px 4px;
+      color: var(--red); border: 1px solid var(--red);
+    }
+
+    .sel-badge {
+      font-size: 10px; color: var(--green);
+      font-weight: bold;
+    }
+
+    .shop-item-name {
+      font-size: 7px; color: var(--text);
+      letter-spacing: 0.04em; line-height: 1.6;
+    }
+
+    .shop-item-stats {
+      display: flex; justify-content: space-between;
+    }
+
+    .shop-cost   { font-size: 9px; color: var(--red); }
+    .shop-profit { font-size: 9px; color: var(--green); }
+
+    .shop-ratio      { font-size: 8px; color: var(--muted); }
+    .shop-ratio.high { color: var(--gold); }
+    .shop-ratio.med  { color: var(--cyan); }
+    .shop-ratio.low  { color: var(--red);  }
+
+    .shop-item-btn {
+      font-size: 7px; padding: 6px 4px;
+      text-align: center; margin-top: 2px;
+    }
+
+    .shop-item-btn:disabled {
+      opacity: 0.3; cursor: not-allowed;
+    }
+
+    .shop-dp-hint {
+      font-size: 9px; color: var(--muted);
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      padding: 8px 12px; line-height: 1.8;
+    }
+  `;
+  document.head.appendChild(style);
+})();

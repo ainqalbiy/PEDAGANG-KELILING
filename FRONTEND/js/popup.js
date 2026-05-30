@@ -1,26 +1,15 @@
-// ========== BUKA / TUTUP POPUP ========== //
-function openPopup(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
+// ══════════════════════════════════════
+//   POPUP SYSTEM
+// ══════════════════════════════════════
 
-function closePopup(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.remove('show');
-  const anyOpen = document.querySelector('.popup-overlay.show');
-  if (!anyOpen) document.body.style.overflow = '';
-}
-
-// ========== TUTUP SAAT KLIK LUAR ========== //
+// Tutup popup saat klik overlay
 document.addEventListener('DOMContentLoaded', () => {
+
+  // Klik luar popup
   document.querySelectorAll('.popup-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
       if (e.target !== overlay) return;
-      // Jangan tutup popup wajib
-      const noClose = ['popup-nama', 'popup-kalkulasi'];
+      const noClose = ['popup-shop-dynamic'];
       if (noClose.includes(overlay.id)) return;
       SFX.cancel();
       closePopup(overlay.id);
@@ -32,100 +21,94 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key !== 'Escape') return;
     const open = document.querySelector('.popup-overlay.show');
     if (!open) return;
-    const noClose = ['popup-nama', 'popup-kalkulasi'];
+    const noClose = ['popup-shop-dynamic'];
     if (noClose.includes(open.id)) return;
     SFX.cancel();
     closePopup(open.id);
   });
 
-  // ── Tombol selesai belanja ──
-  const btnDone = document.getElementById('btn-done-shopping');
-  if (btnDone) {
-    btnDone.addEventListener('click', handleDoneShopping);
-  }
+  // ── Title screen buttons ──
+  document.getElementById('btn-start')?.addEventListener('click', () => {
+    SFX.confirm();
+    showScreen('screen-name');
+    setTimeout(() => document.getElementById('input-name')?.focus(), 300);
+  });
 
-  // ── Tombol lihat hasil dari kalkulasi ──
-  // ── FIX #2: HANYA di sini, tidak di main.js ──
-  const btnLihat = document.getElementById('btn-lihat-hasil');
-  if (btnLihat) {
-    btnLihat.addEventListener('click', () => {
-      closePopup('popup-kalkulasi');
-      showHasilPopup(); // ← pakai fungsi dari game-engine.js
-    });
-  }
+  document.getElementById('btn-how')?.addEventListener('click', () => {
+    SFX.confirm();
+    openPopup('popup-tutorial');
+  });
 
-  // ── Tombol next day ──
-  const btnNext = document.getElementById('btn-next-day');
-  if (btnNext) {
-    btnNext.addEventListener('click', handleNextRound);
-  }
+  document.getElementById('btn-lb-title')?.addEventListener('click', () => {
+    SFX.confirm();
+    showLeaderboard();
+  });
 
-  // ── Tombol finish journey ──
-  const btnFinish = document.getElementById('btn-finish-journey');
-  if (btnFinish) {
-    btnFinish.addEventListener('click', handleFinishGame);
-  }
-
-  // ── Tombol show / close DP panel ──
-  const btnShowDP = document.getElementById('btn-show-dp');
-  if (btnShowDP) {
-    btnShowDP.addEventListener('click', () => {
+  // Enter dari title
+  document.addEventListener('keydown', e => {
+    const titleScreen = document.getElementById('screen-title');
+    if (e.key === 'Enter' && titleScreen?.classList.contains('active')) {
       SFX.confirm();
-      toggleDPPanel();
-    });
-  }
+      showScreen('screen-name');
+      setTimeout(() => document.getElementById('input-name')?.focus(), 300);
+    }
+  });
 
-  const btnCloseDP = document.getElementById('btn-close-dp');
-  if (btnCloseDP) {
-    btnCloseDP.addEventListener('click', () => {
-      SFX.cancel();
-      closeDPPanel();
-    });
-  }
+  // ── Name screen ──
+  document.getElementById('btn-name-ok')?.addEventListener('click', () => {
+    confirmName();
+  });
 
-  // ── Tombol leaderboard dari akhir ──
-  const btnAkhirLb = document.getElementById('btn-akhir-leaderboard');
-  if (btnAkhirLb) {
-    btnAkhirLb.addEventListener('click', () => {
-      closePopup('popup-akhir');
-      showLeaderboard();
-    });
-  }
+  document.getElementById('input-name')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmName();
+  });
 
-  // ── Tombol save score ──
-  const btnSave = document.getElementById('btn-save-akhir');
-  if (btnSave) {
-    btnSave.addEventListener('click', () => {
-      handleSaveScore('input-nama-akhir', 'save-msg');
-    });
-  }
+  // ── Kalkulasi screen ──
+  document.getElementById('btn-kalk-done')?.addEventListener('click', () => {
+    SFX.confirm();
+    if (window.pendingKalkDone) window.pendingKalkDone();
+  });
 
-  // ── Tombol title leaderboard ──
-  const btnTitleLb = document.getElementById('btn-title-leaderboard');
-  if (btnTitleLb) {
-    btnTitleLb.addEventListener('click', showLeaderboard);
-  }
+  // ── Hasil screen ──
+  document.getElementById('btn-next-round')?.addEventListener('click', () => {
+    SFX.confirm();
+    if (typeof handleNextRound === 'function') handleNextRound();
+  });
+
+  document.getElementById('btn-finish')?.addEventListener('click', () => {
+    SFX.confirm();
+    if (typeof handleFinishGame === 'function') handleFinishGame();
+  });
+
+  // ── Akhir screen ──
+  document.getElementById('btn-save')?.addEventListener('click', () => {
+    SFX.confirm();
+    handleSaveScore();
+  });
+
+  document.getElementById('btn-akhir-lb')?.addEventListener('click', () => {
+    SFX.confirm();
+    showLeaderboard();
+  });
+
+  // ── DP Panel ──
+  document.getElementById('dp-panel')?.addEventListener('click', e => {
+    // Jangan tutup saat klik dalam panel
+    e.stopPropagation();
+  });
+
 });
 
-// ========== POPUP LEADERBOARD ========== //
-async function showLeaderboard() {
-  openPopup('popup-leaderboard');
+// ══════════════════════════════════════
+//   CONFIRM NAME
+// ══════════════════════════════════════
+function confirmName() {
+  const input = document.getElementById('input-name');
+  const name  = input?.value.trim() || 'PEDAGANG';
+
+  window.gameState.playerName = name.toUpperCase().slice(0, 10);
   SFX.confirm();
 
-  document.getElementById('lb-list').innerHTML =
-    `<div class="lb-loading">⏳ Memuat data...</div>`;
-
-  const result = await apiGetLeaderboard();
-  if (result.success) {
-    renderLeaderboard(result.data.leaderboard);
-  } else {
-    document.getElementById('lb-list').innerHTML =
-      `<div class="lb-empty">Gagal memuat.<br>${result.error}</div>`;
-  }
-}
-
-// ========== POPUP AKHIR ========== //
-function showAkhir(gameHistory, totalPlayer, totalDP) {
-  renderAkhir(gameHistory, totalPlayer, totalDP);
-  openPopup('popup-akhir');
+  // Mulai game
+  if (typeof startGame === 'function') startGame();
 }
