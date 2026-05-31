@@ -1,0 +1,77 @@
+/* HUD */
+.hud {
+  position: absolute;
+  top: 8px; left: 8px;
+  display: flex; gap: 8px;
+  z-index: 10;
+}
+.hud-item {
+  background: rgba(26, 19, 37, 0.92);
+  border: 3px solid var(--c-frame-light);
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--c-cream);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  min-width: 80px;
+}
+.hud-icon { font-size: 14px; }
+
+/* Top right buttons */
+.top-buttons {
+  position: absolute;
+  top: 8px; right: 8px;
+  display: flex; gap: 6px;
+  z-index: 10;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 380px;
+}
+
+/* Notification */
+.notification {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--c-warm-yellow);
+  color: var(--c-text-dark);
+  border: 4px solid var(--c-text-dark);
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  z-index: 50;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  animation: slideDown 0.3s, slideDown 0.3s reverse 2.5s;
+  letter-spacing: 1px;
+}
+.notification.ok { background: var(--c-ok); color: #0a3a14; }
+.notification.warn { background: var(--c-orange); color: var(--c-cream); }
+.notification.err { background: var(--c-red); color: var(--c-cream); }
+/* ========== INTERACTIVE GAMEPLAY ADDITIONS ========== */
+
+/* Player movement footstep glow */
+#game-canvas {
+  cursor: default;
+}
+
+/* Journey path indicator */
+.journey-active #game-canvas {
+  box-shadow: 0 0 0 2px #ffd966, 0 0 20px rgba(255,217,102,0.3);
+}
+
+/* Key controls overlay hint */
+.controls-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(26,19,37,0.85);
+  border: 1px solid #6e4ba0;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #a784e0;
+  pointer-events: none;
+}

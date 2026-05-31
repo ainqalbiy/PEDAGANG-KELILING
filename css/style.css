@@ -1,0 +1,166 @@
+/* PEDAGANG KELILING - Core Styles */
+:root {
+  --c-bg: #1a1325;
+  --c-bg-deep: #0f0a1a;
+  --c-grass: #6dd06d;
+  --c-grass-dark: #3e8c3e;
+  --c-water: #4ab8e6;
+  --c-water-deep: #2e7fbd;
+  --c-sand: #f0d68c;
+  --c-road: #c79a6b;
+  --c-road-dark: #8d6a44;
+  --c-sky: #b6e7ff;
+  --c-sunset: #ffb778;
+  --c-night: #2a1f4d;
+  --c-warm-yellow: #ffd966;
+  --c-orange: #ff8c42;
+  --c-red: #ff5b6e;
+  --c-purple: #a784e0;
+  --c-pink: #ffaecf;
+  --c-cream: #fff4d6;
+  --c-text-dark: #2d1b3d;
+  --c-text-light: #fff4d6;
+  --c-frame: #3a2a52;
+  --c-frame-light: #6e4ba0;
+  --c-accent: #ffd966;
+  --c-ok: #5fd66e;
+  --c-warn: #ffb84a;
+  --c-err: #ff5b6e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 0%, #2a1f4d 0%, #1a1325 40%, #0f0a1a 100%);
+  font-family: 'VT323', 'Courier New', monospace;
+  color: var(--c-cream);
+  overflow: hidden;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+#game-shell {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+#game-frame {
+  position: relative;
+  width: 960px;
+  height: 600px;
+  max-width: 100%;
+  max-height: 100%;
+  border: 4px solid var(--c-frame-light);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 4px var(--c-frame),
+    0 0 30px rgba(167, 132, 224, 0.45),
+    inset 0 0 0 2px #1a1325;
+  background: #0f0a1a;
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+#game-canvas {
+  display: block;
+  width: 960px;
+  height: 600px;
+  image-rendering: pixelated;
+  background: #b6e7ff;
+}
+
+/* Pixel buttons */
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  background: var(--c-warm-yellow);
+  color: var(--c-text-dark);
+  border: 3px solid var(--c-text-dark);
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--c-text-dark);
+  transition: transform 0.08s, box-shadow 0.08s, background 0.15s;
+  image-rendering: pixelated;
+  text-transform: uppercase;
+}
+.pixel-btn:hover {
+  background: var(--c-orange);
+  color: var(--c-cream);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--c-text-dark);
+}
+.pixel-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--c-text-dark);
+}
+.pixel-btn.small { font-size: 9px; padding: 7px 10px; }
+.pixel-btn.primary { background: var(--c-ok); }
+.pixel-btn.danger { background: var(--c-red); color: var(--c-cream); }
+.pixel-btn.purple { background: var(--c-purple); color: var(--c-cream); }
+.pixel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hidden { display: none !important; }
+
+/* Splash screen */
+.splash {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #2a1f4d 0%, #0f0a1a 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100;
+  gap: 18px;
+}
+.splash-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 32px;
+  color: var(--c-warm-yellow);
+  text-shadow: 4px 4px 0 var(--c-red), 8px 8px 0 rgba(0,0,0,0.4);
+  letter-spacing: 2px;
+}
+.splash-sub {
+  font-size: 22px;
+  color: var(--c-pink);
+  letter-spacing: 1px;
+}
+.splash-loader {
+  width: 360px; height: 16px;
+  background: #1a1325; border: 3px solid var(--c-frame-light);
+  position: relative; overflow: hidden;
+}
+.splash-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-warm-yellow), var(--c-orange));
+  width: 0%;
+  transition: width 0.2s;
+}
+.splash-tip { color: var(--c-cream); font-size: 18px; opacity: 0.8; }
+.splash.fade-out { animation: splashFade 0.6s forwards; }
+@keyframes splashFade {
+  to { opacity: 0; pointer-events: none; }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

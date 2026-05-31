@@ -1,0 +1,127 @@
+/* Algorithm visualization side panel */
+.algo-panel {
+  position: absolute;
+  top: 50px;
+  right: 8px;
+  width: 290px;
+  background: rgba(26, 19, 37, 0.96);
+  border: 4px solid var(--c-frame-light);
+  color: var(--c-cream);
+  padding: 12px;
+  z-index: 20;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  animation: slideUp 0.3s;
+  font-family: 'VT323', monospace;
+}
+.algo-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 2px dashed var(--c-frame-light);
+  padding-bottom: 8px;
+}
+.algo-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--c-warm-yellow);
+  letter-spacing: 1px;
+}
+.algo-close {
+  background: var(--c-red);
+  color: var(--c-cream);
+  border: 2px solid var(--c-text-dark);
+  width: 22px; height: 22px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+}
+
+.algo-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.algo-stat {
+  background: rgba(167, 132, 224, 0.18);
+  border-left: 3px solid var(--c-purple);
+  padding: 4px 8px;
+  font-size: 15px;
+  display: flex; justify-content: space-between;
+}
+.algo-stat span:first-child { color: var(--c-pink); }
+.algo-stat span:last-child { color: var(--c-warm-yellow); font-weight: bold; }
+
+.algo-current {
+  background: rgba(255, 217, 102, 0.1);
+  border: 2px solid var(--c-warm-yellow);
+  padding: 8px;
+  margin-bottom: 10px;
+}
+.algo-current-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--c-pink);
+  margin-bottom: 4px;
+}
+.algo-current-name {
+  font-size: 18px;
+  color: var(--c-warm-yellow);
+  margin-bottom: 4px;
+  min-height: 22px;
+}
+.algo-current-values {
+  display: flex; gap: 10px;
+  font-size: 14px;
+  color: var(--c-cream);
+}
+.algo-current-values b { color: var(--c-warm-yellow); }
+
+.algo-edu {
+  background: rgba(95, 214, 110, 0.1);
+  border-left: 3px solid var(--c-ok);
+  padding: 8px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  min-height: 60px;
+  line-height: 1.3;
+}
+
+.algo-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.algo-btn {
+  font-size: 8px !important;
+  padding: 6px !important;
+}
+
+.algo-speed {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.algo-speed input {
+  width: 100%;
+  accent-color: var(--c-warm-yellow);
+}
+
+.algo-legend {
+  font-size: 13px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.legend-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border: 1px solid var(--c-text-dark);
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.c-current { background: #ffd966; }
+.c-open { background: #4ab8e6; }
+.c-closed { background: #ff5b6e; }
+.c-path { background: #ffae00; }
+.c-start { background: #5fd66e; }
+.c-goal { background: #a784e0; }

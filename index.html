@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PEDAGANG KELILING - Petualangan Pedagang</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets (urutan penting: style dasar dulu, lalu komponen) -->
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/game.css" />
+  <link rel="stylesheet" href="css/popup.css" />
+  <link rel="stylesheet" href="css/algorithm.css" />
+</head>
+<body>
+
+  <div id="game-shell">
+    <div id="game-frame">
+
+      <!-- Canvas utama -->
+      <canvas id="game-canvas" width="960" height="600" data-testid="game-canvas"></canvas>
+
+      <!-- HUD atas kiri -->
+      <div id="hud" class="hud" data-testid="hud">
+        <div class="hud-item" data-testid="hud-money">
+          <span class="hud-icon">💰</span>
+          <span id="hud-money-value">200</span>
+        </div>
+        <div class="hud-item" data-testid="hud-level">
+          <span class="hud-icon">⭐</span>
+          <span id="hud-level-value">Pedagang Pemula</span>
+        </div>
+        <div class="hud-item" data-testid="hud-xp">
+          <span class="hud-icon">🎯</span>
+          <span id="hud-xp-value">0 XP</span>
+        </div>
+        <div class="hud-item" data-testid="hud-vehicle">
+          <span class="hud-icon">🚶</span>
+          <span id="hud-vehicle-value">Jalan Kaki</span>
+        </div>
+      </div>
+
+      <!-- Tombol menu atas kanan -->
+      <div id="top-buttons" class="top-buttons">
+        <button class="pixel-btn small" id="btn-academy"       data-testid="btn-academy">📚 Akademi</button>
+        <button class="pixel-btn small" id="btn-compare"       data-testid="btn-compare">📊 Analisis</button>
+        <button class="pixel-btn small" id="btn-shop"          data-testid="btn-shop">🛒 Toko</button>
+        <button class="pixel-btn small" id="btn-achievements"  data-testid="btn-achievements">🏆 Prestasi</button>
+        <button class="pixel-btn small" id="btn-save"          data-testid="btn-save">💾 Simpan</button>
+      </div>
+
+      <!-- Dialog box gaya Pokemon -->
+      <div id="dialog-box" class="dialog-box hidden" data-testid="dialog-box">
+        <div class="dialog-name" id="dialog-name">NPC</div>
+        <div class="dialog-text" id="dialog-text"></div>
+        <div class="dialog-buttons" id="dialog-buttons"></div>
+        <div class="dialog-arrow" id="dialog-arrow">▼</div>
+      </div>
+
+      <!-- Panel visualisasi algoritma (kanan) -->
+      <div id="algo-panel" class="algo-panel hidden" data-testid="algo-panel">
+        <div class="algo-header">
+          <div class="algo-title" id="algo-title">A* Search</div>
+          <button class="algo-close" id="algo-close" data-testid="algo-close">✕</button>
+        </div>
+        <div class="algo-stats">
+          <div class="algo-stat"><span>Diperiksa</span><span id="stat-visited">0</span></div>
+          <div class="algo-stat"><span>Open List</span><span id="stat-open">0</span></div>
+          <div class="algo-stat"><span>Closed</span><span id="stat-closed">0</span></div>
+          <div class="algo-stat"><span>Panjang</span><span id="stat-pathlen">-</span></div>
+          <div class="algo-stat"><span>Biaya</span><span id="stat-pathcost">-</span></div>
+          <div class="algo-stat"><span>Waktu</span><span id="stat-time">0ms</span></div>
+        </div>
+        <div class="algo-current">
+          <div class="algo-current-label">Sedang Diperiksa:</div>
+          <div class="algo-current-name" id="algo-current-name">-</div>
+          <div class="algo-current-values">
+            <span>G=<b id="val-g">-</b></span>
+            <span>H=<b id="val-h">-</b></span>
+            <span>F=<b id="val-f">-</b></span>
+          </div>
+        </div>
+        <div class="algo-edu" id="algo-edu">Tekan Mulai untuk menjalankan algoritma...</div>
+        <div class="algo-controls">
+          <button class="pixel-btn algo-btn" id="algo-play"  data-testid="algo-play">▶ Mulai</button>
+          <button class="pixel-btn algo-btn" id="algo-step"  data-testid="algo-step">⏭ Step</button>
+          <button class="pixel-btn algo-btn" id="algo-pause" data-testid="algo-pause">⏸ Pause</button>
+          <button class="pixel-btn algo-btn" id="algo-reset" data-testid="algo-reset">↺ Reset</button>
+        </div>
+        <div class="algo-speed">
+          <label>Kecepatan: <span id="speed-label">3x</span></label>
+          <input type="range" id="algo-speed" min="1" max="10" value="3" data-testid="algo-speed" />
+        </div>
+        <div class="algo-legend">
+          <div><span class="legend-dot c-current"></span> Sedang diperiksa</div>
+          <div><span class="legend-dot c-open"></span> Open List (kandidat)</div>
+          <div><span class="legend-dot c-closed"></span> Closed (selesai)</div>
+          <div><span class="legend-dot c-path"></span> Jalur Akhir</div>
+          <div><span class="legend-dot c-start"></span> Mulai</div>
+          <div><span class="legend-dot c-goal"></span> Tujuan</div>
+        </div>
+      </div>
+
+      <!-- Modal overlay (Toko, Akademi, Prestasi, dll.) -->
+      <div id="modal-overlay" class="modal-overlay hidden" data-testid="modal-overlay">
+        <div class="modal-box" id="modal-box">
+          <div class="modal-header">
+            <div class="modal-title" id="modal-title">Title</div>
+            <button class="modal-close" id="modal-close" data-testid="modal-close">✕</button>
+          </div>
+          <div class="modal-body" id="modal-body"></div>
+        </div>
+      </div>
+
+      <!-- Controls hint -->
+      <div class="controls-hint">WASD / ↑↓←→ bergerak  •  Klik misi untuk memilih</div>
+
+      <!-- Notifikasi toast -->
+      <div id="notification" class="notification hidden" data-testid="notification"></div>
+
+      <!-- Splash screen loading -->
+      <div id="splash" class="splash" data-testid="splash">
+        <div class="splash-title">PEDAGANG KELILING</div>
+        <div class="splash-sub">Pixel Art Trading Adventure</div>
+        <div class="splash-loader">
+          <div class="splash-bar" id="splash-bar"></div>
+        </div>
+        <div class="splash-tip">Siapkan barang daganganmu!</div>
+      </div>
+
+    </div><!-- /#game-frame -->
+  </div><!-- /#game-shell -->
+
+  <!-- ================================================================
+       JAVASCRIPT — urutan load WAJIB diikuti (dependensi dari atas ke bawah)
+       ================================================================ -->
+
+  <!-- 1. Utilities & konstanta global -->
+  <script src="js/utils/constants.js"></script>
+  <script src="js/utils/helper.js"></script>
+  <script src="js/utils/spriteGenerator.js"></script>
+
+  <!-- 2. Data (kota, misi, kendaraan, prestasi) -->
+  <script src="js/data/cities.js"></script>
+  <script src="js/data/mission.js"></script>
+  <script src="js/data/vehicles.js"></script>
+  <script src="js/data/achievements.js"></script>
+
+  <!-- 3. Algoritma pencarian jalur -->
+  <script src="js/algorithms/PriorityQueue.js"></script>
+  <script src="js/algorithms/Graph.js"></script>
+  <script src="js/algorithms/AStar.js"></script>
+  <script src="js/algorithms/Dijkstra.js"></script>
+  <script src="js/algorithms/GreedyBestFirst.js"></script>
+
+  <!-- 4. Core engine -->
+  <script src="js/core/audioManager.js"></script>
+  <script src="js/core/sceneManager.js"></script>
+
+  <!-- 5. Sistem game -->
+  <script src="js/systems/SaveSystem.js"></script>
+  <script src="js/systems/EconomySystem.js"></script>
+  <script src="js/systems/MissionSystem.js"></script>
+  <script src="js/systems/AchievementsSystem.js"></script>
+
+  <!-- 6. UI components -->
+  <script src="js/ui/DialogBox.js"></script>
+  <script src="js/ui/ModalUI.js"></script>
+
+  <!-- 7. Visualizer algoritma -->
+  <script src="js/visualizer/Visualizer.js"></script>
+
+  <!-- 8. Scene-scene game -->
+  <script src="js/scenes/MainMenu.js"></script>
+  <script src="js/scenes/MapScene.js"></script>
+  <script src="js/scenes/DeliveryScene.js"></script>
+  <script src="js/scenes/LearningScene.js"></script>
+
+  <!-- 9. Bootstrap utama (harus paling terakhir) -->
+  <script src="js/scenes/main.js"></script>
+
+</body>
+</html>
