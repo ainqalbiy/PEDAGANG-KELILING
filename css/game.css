@@ -49,6 +49,188 @@
 .notification.ok { background: var(--c-ok); color: #0a3a14; }
 .notification.warn { background: var(--c-orange); color: var(--c-cream); }
 .notification.err { background: var(--c-red); color: var(--c-cream); }
+/* ========== MISSION PANEL (HTML overlay, slide-in dari kiri bawah) ========== */
+.mission-panel {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  /* overflow visible supaya tombol toggle tidak terpotong */
+  overflow: visible;
+}
+
+.mission-panel.collapsed {
+  transform: translateX(calc(-100% + 28px));
+}
+
+/* Pastikan tombol toggle SELALU terlihat meski panel collapsed */
+.mission-toggle-btn {
+  position: relative;
+  z-index: 21;
+  flex-shrink: 0;
+  order: 2; /* tombol di kanan panel */
+}
+
+.mission-toggle-btn {
+  position: relative;
+  z-index: 21;
+  flex-shrink: 0;
+  order: 2; /* tombol di kanan panel */
+  width: 28px;
+  min-height: 80px;
+  background: rgba(110, 75, 160, 0.95);
+  border: 2px solid #a784e0;
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  color: #ffd966;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.4);
+  transition: background 0.2s;
+  writing-mode: vertical-rl;
+}
+
+.mission-toggle-btn:hover {
+  background: #6e4ba0;
+}
+
+.mission-panel-inner {
+  background: rgba(16, 12, 30, 0.96);
+  border: 3px solid #6e4ba0;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  width: 320px;
+  padding: 10px 10px 8px 12px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mission-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #3a2a52;
+  padding-bottom: 6px;
+}
+
+.mission-panel-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #ffd966;
+  letter-spacing: 0.5px;
+}
+
+.mission-day {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #a784e0;
+}
+
+.mission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 40px;
+}
+
+.mission-card {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid #3a2a52;
+  border-radius: 3px;
+  padding: 5px 8px 5px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.mission-card:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: #6e4ba0;
+}
+
+.mission-card.selected {
+  background: rgba(255,217,102,0.18);
+  border-color: #ffd966;
+}
+
+.mission-urgency-bar {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.mission-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mission-card-name {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: #fff4d6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mission-card-route {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: #ffaecf;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mission-card-pay {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #ffd966;
+  flex-shrink: 0;
+}
+
+.mission-empty {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: #ffaecf;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.mission-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2px solid #3a2a52;
+  padding-top: 6px;
+}
+
+.mission-refresh-btn {
+  font-size: 7px !important;
+  padding: 4px 8px !important;
+}
+
+.mission-completed {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: #a784e0;
+}
+
 /* ========== INTERACTIVE GAMEPLAY ADDITIONS ========== */
 
 /* Player movement footstep glow */

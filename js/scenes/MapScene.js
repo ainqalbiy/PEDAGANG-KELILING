@@ -114,6 +114,31 @@ const MapScene = {
     document.getElementById('btn-compare').onclick    = () => { Audio.click(); this._showCompareModal(); };
     document.getElementById('btn-achievements').onclick = () => { Audio.click(); Modal.showAchievements(this.state); };
     document.getElementById('btn-save').onclick       = () => { Audio.click(); SaveSystem.save(this.state); Notify.show('Game tersimpan!', 'ok'); };
+
+    // Panel misi HTML
+    this._updateMissionPanelHTML();
+    const toggleBtn = document.getElementById('mission-panel-toggle');
+    const panel     = document.getElementById('mission-panel');
+    const icon      = document.getElementById('mission-toggle-icon');
+    if (toggleBtn && panel) {
+      toggleBtn.onclick = () => {
+        panel.classList.toggle('collapsed');
+        icon.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+      };
+    }
+    const refreshBtn = document.getElementById('btn-refresh-missions');
+    if (refreshBtn) {
+      refreshBtn.onclick = () => {
+        if (this.journey.active) { Notify.show('Selesaikan misi dulu!', 'warn'); return; }
+        Audio.click();
+        MissionSystem.refresh(this.state);
+        this.selectedMission = null;
+        this._resetJourney();
+        this._updateMissionPanelHTML();
+        Notify.show('Misi baru tersedia!', 'ok');
+        SaveSystem.save(this.state);
+      };
+    }
   },
 
   exit() {
@@ -380,6 +405,7 @@ const MapScene = {
 
     SaveSystem.save(this.state);
     this.updateHUD();
+    this._updateMissionPanelHTML();
     Audio.coin();
     this.spawnParticles(this.player.x, this.player.y, '#ffd966', 16);
 
@@ -861,49 +887,56 @@ const MapScene = {
   },
 
   _drawMissionPanel(ctx) {
-    const px = 10, py = CONST.CANVAS_H - 185, pw = 340, ph = 175;
-    ctx.save();
-    ctx.fillStyle = 'rgba(26,19,37,0.92)'; ctx.strokeStyle = '#6e4ba0'; ctx.lineWidth = 3;
-    ctx.fillRect(px,py,pw,ph); ctx.strokeRect(px,py,pw,ph);
+    // Panel misi sekarang menggunakan HTML — tidak perlu digambar di canvas
+    // Pembaruan dilakukan via _updateMissionPanelHTML()
+  },
 
-    ctx.font = '9px "Press Start 2P",monospace'; ctx.fillStyle = '#ffd966';
-    ctx.fillText('MISI TERSEDIA', px+10, py+16);
+  _updateMissionPanelHTML() {
+    const s = this.state;
+    const missions = s.missions || [];
 
-    ctx.font = '8px "Press Start 2P",monospace'; ctx.fillStyle = '#a784e0';
-    ctx.fillText('WASD / ← ↑ ↓ → untuk bergerak', px+10, py+28);
+    // Update header info
+    const dayLabel = document.getElementById('mission-day-label');
+    if (dayLabel) dayLabel.textContent = 'Hari ' + (s.day || 1);
 
-    const missions = this.state.missions || [];
-    missions.slice(0, 4).forEach((m, i) => {
-      const my = py + 36 + i * 34;
-      const selected = this.selectedMission && this.selectedMission.id === m.id;
-      ctx.fillStyle = selected ? 'rgba(255,217,102,0.25)' : 'rgba(255,255,255,0.06)';
-      ctx.strokeStyle = selected ? '#ffd966' : '#3a2a52'; ctx.lineWidth = 2;
-      ctx.fillRect(px+6, my, pw-12, 30); ctx.strokeRect(px+6, my, pw-12, 30);
-      const urg = URGENCY_INFO[m.urgency] || { color: '#5fd66e' };
-      ctx.fillStyle = urg.color; ctx.fillRect(px+6, my, 4, 30);
-      ctx.font = '11px "VT323",monospace'; ctx.fillStyle = '#fff4d6';
-      ctx.fillText(m.icon + ' ' + m.item, px+16, my+12);
-      const fromName = (CITIES.find(c=>c.id===m.from)||{name:m.from}).name;
-      const toName   = (CITIES.find(c=>c.id===m.to)||{name:m.to}).name;
-      ctx.font = '10px "VT323",monospace'; ctx.fillStyle = '#ffaecf';
-      ctx.fillText(fromName + ' → ' + toName, px+16, my+23);
-      ctx.font = '9px "Press Start 2P",monospace'; ctx.fillStyle = '#ffd966';
-      ctx.fillText('💰'+m.pay, px+pw-70, my+18);
-    });
+    const completedLabel = document.getElementById('mission-completed-label');
+    if (completedLabel) completedLabel.textContent = 'Selesai: ' + (s.missionsCompleted || 0);
+
+    // Render daftar misi
+    const list = document.getElementById('mission-list');
+    if (!list) return;
+    list.innerHTML = '';
 
     if (missions.length === 0) {
-      ctx.font = '11px "VT323",monospace'; ctx.fillStyle = '#ffaecf';
-      ctx.fillText('Semua misi selesai! Tekan BARU', px+10, py+80);
+      list.innerHTML = '<div class="mission-empty">Semua misi selesai!<br>Tekan MISI BARU 🔄</div>';
+      return;
     }
 
-    ctx.fillStyle = '#3a2a52'; ctx.strokeStyle = '#6e4ba0'; ctx.lineWidth = 2;
-    ctx.fillRect(px+6, py+ph-28, 90, 22); ctx.strokeRect(px+6, py+ph-28, 90, 22);
-    ctx.font = '8px "Press Start 2P",monospace'; ctx.fillStyle = '#ffd966';
-    ctx.fillText('🔄 BARU', px+14, py+ph-12);
+    const URGENCY_COLORS = { tinggi: '#ff5b6e', sedang: '#ffd966', rendah: '#5fd66e' };
 
-    ctx.font = '10px "VT323",monospace'; ctx.fillStyle = '#ffaecf';
-    ctx.fillText('Hari ke-'+(this.state.day||1)+'  Selesai: '+this.state.missionsCompleted, px+110, py+ph-14);
-    ctx.restore();
+    missions.slice(0, 4).forEach(m => {
+      const selected = this.selectedMission && this.selectedMission.id === m.id;
+      const urgColor = URGENCY_COLORS[m.urgency] || '#5fd66e';
+      const fromName = (CITIES.find(c => c.id === m.from) || { name: m.from }).name;
+      const toName   = (CITIES.find(c => c.id === m.to)   || { name: m.to   }).name;
+
+      const card = document.createElement('div');
+      card.className = 'mission-card' + (selected ? ' selected' : '');
+      card.innerHTML = `
+        <div class="mission-urgency-bar" style="background:${urgColor}"></div>
+        <div class="mission-card-body">
+          <div class="mission-card-name">${m.icon} ${m.item}</div>
+          <div class="mission-card-route">${fromName} → ${toName}</div>
+        </div>
+        <div class="mission-card-pay">💰${m.pay}</div>
+      `;
+      card.addEventListener('click', () => {
+        Audio.click();
+        this._selectMission(m);
+        this._updateMissionPanelHTML();
+      });
+      list.appendChild(card);
+    });
   },
 
   _drawJourneyHUD(ctx) {
@@ -1242,32 +1275,6 @@ const MapScene = {
     if (!document.getElementById('modal-overlay').classList.contains('hidden')) return;
 
     const s = this.state;
-
-    // Refresh missions button
-    const px = 10, py = CONST.CANVAS_H - 185, ph = 175;
-    if (mx >= px+6 && mx <= px+96 && my >= py+ph-28 && my <= py+ph-6) {
-      if (this.journey.active) { Notify.show('Selesaikan misi dulu!','warn'); return; }
-      Audio.click();
-      MissionSystem.refresh(s);
-      this.selectedMission = null;
-      this._resetJourney();
-      Notify.show('Misi baru tersedia!','ok');
-      SaveSystem.save(s);
-      return;
-    }
-
-    // Mission card click
-    const mpx=10, mpy=CONST.CANVAS_H-185;
-    if (mx>=mpx && mx<=mpx+340 && my>=mpy+34) {
-      const missions = s.missions || [];
-      const idx = Math.floor((my - mpy - 36) / 34);
-      if (idx>=0 && idx<missions.length) {
-        this._selectMission(missions[idx]);
-        return;
-      }
-    }
-
-    // City click
     const city = CITIES.find(c => H.pointInCircle(mx, my, c.x, c.y, 18));
     if (city) {
       Audio.click();

@@ -117,6 +117,24 @@
       <!-- Controls hint -->
       <div class="controls-hint">WASD / ↑↓←→ bergerak  •  Klik misi untuk memilih</div>
 
+      <!-- Panel Misi HTML (menggantikan canvas panel) -->
+      <div id="mission-panel" class="mission-panel" data-testid="mission-panel">
+        <div class="mission-panel-inner">
+          <div class="mission-panel-header">
+            <span class="mission-panel-title">📋 MISI TERSEDIA</span>
+            <span id="mission-day-label" class="mission-day">Hari 1</span>
+          </div>
+          <div id="mission-list" class="mission-list"></div>
+          <div class="mission-panel-footer">
+            <button id="btn-refresh-missions" class="pixel-btn small mission-refresh-btn">🔄 MISI BARU</button>
+            <span id="mission-completed-label" class="mission-completed">Selesai: 0</span>
+          </div>
+        </div>
+        <button id="mission-panel-toggle" class="mission-toggle-btn" title="Toggle Panel Misi">
+          <span id="mission-toggle-icon">◀</span>
+        </button>
+      </div>
+
       <!-- Notifikasi toast -->
       <div id="notification" class="notification hidden" data-testid="notification"></div>
 
